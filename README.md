@@ -135,6 +135,12 @@ The reply has:
 
 Errors come back with an `error` message: 400 if the body isn't JSON, and 422 if there isn't enough typing to score (fewer than 5 key presses in the sentence).
 
+To try the endpoint without the UI, start `serve.py` on the simulated night and post the example request from the `analysis` folder. It's a simulated person's attempt at the vowel rule, with the username `test-user`: the first post is a first guess with a `fatigue_index`, and repeating it compares with that best attempt.
+
+```bash
+curl -X POST -H "Content-Type: application/json" --data @examples/score_request.json http://localhost:8765/api/score
+```
+
 ## What the analysis does
 
 - **Features:** typing speed, rhythm, pauses, key hold times, errors, the vowel rule's cost and Shift timing, and the reaction test's median, speed and lapses. Timings leave out Shift presses and corrections. `features_raw.csv` has each feature as measured. `features_processed.csv` has each one as a change from the person's first two check-ins, with backspaces per 100 keys left as they are, and the models use its columns.
