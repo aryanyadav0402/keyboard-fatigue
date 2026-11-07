@@ -211,3 +211,13 @@ def empty_tables() -> Tables:
                   units=pd.DataFrame(columns=["checkin_id", "task_idx", "unit", "task"]),
                   keys=pd.DataFrame(columns=["checkin_id", "task_idx", "unit", "key"]),
                   pvt=pd.DataFrame(columns=["checkin_id", "phase", "rt_ms", "outcome"]))
+
+
+def folder_problem(folder: str | Path) -> str | None:
+    """Why a data folder gives no check-ins, when it plainly has none."""
+    path = Path(folder).expanduser().resolve()
+    if not path.is_dir():
+        return f"there's no folder at {path}"
+    if not any(path.rglob("*.json")):
+        return f"there are no check-in files (*.json) in {path} yet"
+    return None
