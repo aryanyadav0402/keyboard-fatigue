@@ -108,7 +108,7 @@ def make_figures(f: pd.DataFrame, r: dict, folder: Path) -> dict:
         axes[0].hist(b["null"], bins=30, color="#9aa5b1")
         axes[0].axvline(b["improvement"], color="#d1495b", lw=2, label=f"real data, {p_eq(b['p'])}")
         axes[0].set_xlabel("error cut by adding typing to hours awake (KSS points)")
-        axes[0].set_title("Main test: typing shuffled within each person", fontsize=10)
+        axes[0].set_title("Clock check: typing shuffled within each person", fontsize=10)
         axes[1].hist(o["null"], bins=30, color="#9aa5b1")
         axes[1].axvline(o["mae"], color="#d1495b", lw=2, label=f"real data, {p_eq(o['p'])}")
         axes[1].set_xlabel("typing-only error (KSS points); lower is better")
@@ -155,19 +155,26 @@ def mixed_section(name: str, m: dict) -> list[str]:
 
 def findings(r: dict) -> list[str]:
     out = []
+    if "table" in r:
+        t = r["table"].MAE
+        better = "better than" if t[MAIN] < t["Hours awake (benchmark)"] else "no better than"
+        out.append(f"Typing alone predicted tiredness with an average error of {num(t[MAIN])} KSS points, {better} "
+                   f"hours awake alone ({num(t['Hours awake (benchmark)'])}). Always guessing the average gives "
+                   f"{num(t['Training mean'])}.")
     if "beyond_clock" in r:
         b = r["beyond_clock"]
         if b["p"] < 0.05 and b["improvement"] > 0:
-            out.append(f"Typing adds to hours awake: adding the typing features cut the average error from "
-                       f"{num(b['clock_mae'])} to {num(b['main_mae'])} KSS points (shuffle test {p_eq(b['p'])}).")
+            out.append(f"Clock check: typing carries information beyond hours awake. Adding it to hours awake cut the "
+                       f"error from {num(b['clock_mae'])} to {num(b['main_mae'])} KSS points (shuffle test {p_eq(b['p'])}).")
         else:
-            out.append(f"Typing did not clearly add to hours awake: the average error went from {num(b['clock_mae'])} "
-                       f"to {num(b['main_mae'])} KSS points (shuffle test {p_eq(b['p'])}). That's a null result.")
+            out.append(f"Clock check: typing didn't clearly add anything to hours awake (error {num(b['clock_mae'])} → "
+                       f"{num(b['main_mae'])}, shuffle test {p_eq(b['p'])}), so part of what it picks up may just be "
+                       "how late it is.")
         o = r["original"]
         text = f"The original test, which shuffles ratings within each person, gives {p_eq(o['p'])}."
         if o["p"] < 0.05 and b["p"] >= 0.05:
             text += (" It would call typing predictive, but only because typing and tiredness both drift over the"
-                     " night; the main test shows typing adds nothing beyond the clock.")
+                     " night; the clock check shows typing adds nothing beyond hours awake.")
         out.append(text)
     rule = r.get("mixed", {}).get("Rule cost", {})
     if "table" in rule and "hours_awake" in rule["table"].index:
@@ -219,22 +226,24 @@ def report_text(tables: Tables, f: pd.DataFrame, r: dict, figures: dict, data_di
         lines += ["## Findings", ""] + [f"- {x}" for x in items] + [""]
 
     if "table" in r:
-        lines += ["## Does typing add anything to hours awake?", "",
+        lines += ["## How well does typing predict tiredness?", "",
                   "Each person is predicted by a model trained on everyone else. Anchored models predict the change "
-                  "from the person's own baseline rating, then add it back.", "",
+                  "from the person's own baseline rating, then add it back. Predictions use typing only; hours awake "
+                  "is a benchmark, because the demo can't ask for it.", "",
                   "| Model | Error (MAE, KSS points) | Spearman | Spearman within person (median) |",
                   "|---|---|---|---|"]
         for name, row in r["table"].iterrows():
             lines.append(f"| {name} | {num(row.MAE)} | {num(row.Spearman)} | {num(row['Spearman within person'])} |")
         b, o = r["beyond_clock"], r["original"]
-        lines += ["", f"**Main test.** Adding typing to hours awake changes the error from {num(b['clock_mae'])} to "
+        lines += ["", f"**Clock check.** Adding typing to hours awake changes the error from {num(b['clock_mae'])} to "
                       f"{num(b['main_mae'])} KSS points. Shuffling the typing features within each person "
-                      f"{len(b['null'])} times gives {p_eq(b['p'])}.", "",
+                      f"{len(b['null'])} times gives {p_eq(b['p'])}. A small p-value means typing knows something "
+                      "the clock doesn't.", "",
                   f"**Original test.** Shuffling ratings within each person, as in the plan, gives a typing-only "
                   f"error of {num(o['mae'])} and {p_eq(o['p'])}. This test can't tell typing apart from anything "
                   "else that drifts over the night.", "",
-                  f"**Tired vs alert** (above each person's median KSS or not): AUC {num(r['auc'])} with hours awake "
-                  f"and typing, {num(r['auc_clock'])} with hours awake alone.", ""]
+                  f"**Tired vs alert** (above each person's median KSS or not): AUC {num(r['auc'])} with typing "
+                  f"alone, {num(r['auc_clock'])} with hours awake alone.", ""]
         if "permutation" in figures:
             lines += [f"![Permutation tests](figures/{figures['permutation']})", ""]
         if "tiredness" in figures:

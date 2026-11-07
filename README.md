@@ -50,8 +50,8 @@ The simulator writes check-ins in the app's format for two worlds: one where fat
 ## What the analysis does
 
 - **Features:** typing speed, rhythm, pauses, key hold times, errors, the vowel rule's cost and Shift timing, free-text pauses, and the reaction test's median, speed and lapses. Timings leave out Shift presses and corrections. `features_raw.csv` has each feature as measured. `features_processed.csv` has each one as a change from the person's first two check-ins, with backspaces per 100 keys left as they are, and the models use its columns.
-- **Models:** ridge regression predicts each person's change in KSS from their own first two check-ins. Every person is predicted by a model trained on everyone else. A logistic regression separates tired check-ins from alert ones.
-- **The key test:** over one night, practice, tiredness and the clock all drift together, so we test whether typing adds anything to hours awake. The null comes from shuffling the typing features within each person.
+- **Models:** ridge regression predicts each person's change in KSS from their own first two check-ins, using 7 typing features: the vowel rule's cost, backspaces, accuracy, rhythm unevenness, long pauses, key hold time and free-text thinking pauses. Predictions use typing only, because the demo can't ask how long someone has been awake. Every person is predicted by a model trained on everyone else, and a logistic regression separates tired check-ins from alert ones.
+- **Hours awake as a benchmark:** we compare typing alone with hours awake alone. Over one night, practice, tiredness and the clock all drift together, so a clock check also tests whether typing adds anything to hours awake, by shuffling the typing features within each person.
 
 | File | What it does |
 |---|---|

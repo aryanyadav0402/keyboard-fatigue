@@ -1,13 +1,16 @@
 """Tiredness models and their evaluation, leaving one panel person out at a time.
 
-Over one night, practice, tiredness and the clock all drift together, so the question that
-matters is whether typing tells us anything hours awake doesn't:
+Predictions use typing only, because the demo can't ask people how long they've been awake.
+Hours awake is still recorded, and the evaluation uses it in two ways:
 
-- every model is compared with hours awake alone, under the same leave-one-person-out split;
-- the main permutation test shuffles the typing features within each person and keeps the
-  ratings and hours awake in place, so a small p-value means typing adds information beyond the clock;
-- the original test from the plan (shuffling ratings within each person) is kept for comparison,
-  because typing that only drifts with practice can fool it.
+- as a benchmark: typing alone is compared with hours awake alone, under the same
+  leave-one-person-out split;
+- as a clock check: practice, tiredness and the clock all drift together over one night, so a
+  permutation test shuffles the typing features within each person, keeping the ratings and hours
+  awake in place, and asks whether typing adds information beyond the clock.
+
+The original test from the plan (shuffling ratings within each person) is kept for comparison,
+because typing that only drifts with practice can fool it.
 
 People use the KSS scale differently, so models predict each person's change from their own
 baseline rating and then add the baseline back ("anchored").
@@ -28,17 +31,16 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
 ALPHAS = np.logspace(-2, 3, 30)
-# Fixed before seeing any real data. No feature selection happens on the data. These are the
-# columns of features_processed.csv: changes from each person's first two check-ins (_dev), and
-# backspaces per 100 keys as they are.
-TYPING = ["vt_rule_cost_dev", "vt_shift_lead_med_dev", "vt_wpm_dev", "vt_gap_cv_dev", "vt_hold_med_dev",
-          "vt_pause1s_share_dev", "vt_accuracy_dev", "backspace_per100", "ft_word_gap_med_dev", "ft_pause2s_share_dev"]
-PLAIN_LOAD_COST = ["wpm_ratio_dev", "gap_ratio_dev", "cv_ratio_dev", "acc_diff_dev"]  # once there's a plain copy task
-RULE = ["vt_rule_cost_dev", "vt_shift_lead_med_dev", *PLAIN_LOAD_COST]
-RT = ["rt_speed_dev", "rt_lapse_rate_dev"]
-CLOCK = ["hours_rel"]  # hours awake relative to the person's baseline check-ins
+# The 7 typing features picked on 7 Nov, before any real results; no feature selection happens on
+# the data. They are columns of features_processed.csv: changes from each person's first two
+# check-ins (_dev), and backspaces per 100 keys as they are.
+TYPING = ["vt_rule_cost_dev", "backspace_per100", "vt_accuracy_dev", "vt_gap_cv_dev",
+          "vt_pause1s_share_dev", "vt_hold_med_dev", "ft_pause2s_share_dev"]
+RULE = ["vt_rule_cost_dev"]
+RT = ["rt_lapse_rate_dev"]  # the reaction test, for one comparison row
+CLOCK = ["hours_rel"]  # hours awake relative to the baseline check-ins: a benchmark, never a prediction input
 EXTERNAL = ["vt_rule_cost", "vt_gap_cv", "vt_accuracy", "backspace_per100"]  # need no baseline
-MAIN = "Hours awake + typing (main)"
+MAIN = "Typing only (main)"
 MIN_PEOPLE, MIN_CHECKINS, MIN_PER_PERSON = 3, 15, 3
 MIXED = {
     "Tiredness": "kss ~ hours_awake + log_checkin + vt_gap_cv_dev + vt_rule_cost_dev",
@@ -62,7 +64,7 @@ def present(f: pd.DataFrame, cols: list[str]) -> list[str]:
 
 def scored(f: pd.DataFrame) -> pd.DataFrame:
     """Panel check-ins we predict: rated, not a baseline check-in, and with some typing data."""
-    typing = [c for c in TYPING + PLAIN_LOAD_COST if c in f]
+    typing = [c for c in TYPING if c in f]
     if f.empty or not typing:
         return f.iloc[0:0]
     keep = f.participant_type.eq("panel") & ~f.is_baseline & f.kss.notna() & f[typing].notna().any(axis=1)
@@ -119,12 +121,12 @@ def compare_models(d: pd.DataFrame, typing: list[str], rt: list[str]) -> tuple[p
     preds = {
         "Training mean": predict(d, [], anchored=False),
         "Own baseline rating": np.clip(d.kss_base.to_numpy(float), 1, 9),
-        "Hours awake": predict(d, CLOCK),
-        "Typing only": predict(d, typing),
-        MAIN: predict(d, CLOCK + typing),
-        "Hours awake + typing + reaction test": predict(d, CLOCK + typing + rt),
-        "Hours awake + typing, no rule cost": predict(d, CLOCK + no_rule),
-        "Hours awake + typing, not anchored": predict(d, ["hours_awake"] + typing, anchored=False),
+        "Hours awake (benchmark)": predict(d, CLOCK),
+        MAIN: predict(d, typing),
+        "Typing + reaction test": predict(d, typing + rt),
+        "Typing without rule cost": predict(d, no_rule),
+        "Typing, not anchored": predict(d, typing, anchored=False),
+        "Typing + hours awake (check only)": predict(d, CLOCK + typing),
     }
     table = pd.DataFrame({name: metrics(d, p) for name, p in preds.items()}).T
     return table, pd.DataFrame(preds, index=d.index)
@@ -264,8 +266,8 @@ def external_test(f: pd.DataFrame) -> dict | None:
 def run_models(f: pd.DataFrame, n_perm: int = 500, seed: int = 0) -> dict:
     d = scored(f)
     r = {"scored": d, "missing": missing_data(d)}
-    r["typing"] = present(d, TYPING + PLAIN_LOAD_COST)
-    r["inactive"] = [c for c in TYPING + PLAIN_LOAD_COST if c not in r["typing"]]
+    r["typing"] = present(d, TYPING)
+    r["inactive"] = [c for c in TYPING if c not in r["typing"]]
     r["rt"] = present(d, RT)
     if f.empty:
         return r
@@ -278,7 +280,7 @@ def run_models(f: pd.DataFrame, n_perm: int = 500, seed: int = 0) -> dict:
     r["table"], r["preds"] = compare_models(d, r["typing"], r["rt"])
     r["beyond_clock"] = beyond_clock_test(d, r["typing"], n_perm, seed)
     r["original"] = original_test(d, r["typing"], n_perm, seed)
-    r["auc"], r["tired_prob"] = classify(d, CLOCK + r["typing"])
+    r["auc"], r["tired_prob"] = classify(d, r["typing"])
     r["auc_clock"], _ = classify(d, CLOCK)
     return r
 
@@ -286,8 +288,7 @@ def run_models(f: pd.DataFrame, n_perm: int = 500, seed: int = 0) -> dict:
 def latest_predictions(f: pd.DataFrame) -> pd.DataFrame:
     """Each person's latest check-in with predicted KSS, from models trained on all panel data."""
     d = scored(f)
-    typing = present(d, TYPING + PLAIN_LOAD_COST)
-    cols = CLOCK + typing
+    typing = cols = present(d, TYPING)  # no hours awake: the demo can't ask for it
     main = clf = None
     if not missing_data(d) and typing:
         main = ridge().fit(d[cols].to_numpy(float), d.kss_delta.to_numpy(float))

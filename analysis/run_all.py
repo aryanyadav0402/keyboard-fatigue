@@ -8,7 +8,7 @@ import time
 
 from features import build_features
 from load_data import load_sessions
-from model import run_models
+from model import MAIN, run_models
 from report import write_outputs
 
 
@@ -31,9 +31,9 @@ def main() -> None:
         print("  not enough data:", gap)
     report = write_outputs(tables, features, results, args.out, args.data)
     if "beyond_clock" in results:
-        b, o = results["beyond_clock"], results["original"]
-        print(f"Hours awake alone: error {b['clock_mae']:.2f}; with typing: {b['main_mae']:.2f} "
-              f"(main test p = {b['p']:.3f}; original test p = {o['p']:.3f})")
+        b, o, mae = results["beyond_clock"], results["original"], results["table"].MAE
+        print(f"Typing alone: error {mae[MAIN]:.2f}; hours awake alone: {b['clock_mae']:.2f}; typing + hours: "
+              f"{b['main_mae']:.2f} (clock check p = {b['p']:.3f}; original test p = {o['p']:.3f})")
     print(f"Done in {time.time() - start:.0f} s. Report: {report}")
 
 

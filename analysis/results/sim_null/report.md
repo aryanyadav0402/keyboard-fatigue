@@ -1,6 +1,6 @@
 # Tiredness from typing: results
 
-Data from `../data/sim/null`, analysed Sat 07 Nov 18:09. 122 check-ins: 95 from 7 panel people and 27 from 20 one-off people. 81 panel check-ins are scored; each person's first 2 are their baseline.
+Data from `../data/sim/null`, analysed Sat 07 Nov 19:27. 122 check-ins: 95 from 7 panel people and 27 from 20 one-off people. 81 panel check-ins are scored; each person's first 2 are their baseline.
 
 - 4 vowel task timings dropped because the page lost focus.
 - 10 free text timings dropped because the page lost focus.
@@ -8,33 +8,34 @@ Data from `../data/sim/null`, analysed Sat 07 Nov 18:09. 122 check-ins: 95 from 
 
 ## Findings
 
-- Typing did not clearly add to hours awake: the average error went from 1.40 to 1.45 KSS points (shuffle test p = 0.361). That's a null result.
-- The original test, which shuffles ratings within each person, gives p = 0.964.
+- Typing alone predicted tiredness with an average error of 2.24 KSS points, no better than hours awake alone (1.40). Always guessing the average gives 1.93.
+- Clock check: typing didn't clearly add anything to hours awake (error 1.40 → 1.57, shuffle test p = 0.727), so part of what it picks up may just be how late it is.
+- The original test, which shuffles ratings within each person, gives p = 0.473.
 - After allowing for practice, the rule cost changed by -0.002 per hour awake (95% CI -0.008 to 0.004), which isn't clearly different from zero.
 - Gaps next to a capital took 1.32× as long as ordinary gaps (Wilcoxon p < 0.001, 118 check-ins), so the vowel rule does cost time.
 - Across 3 sleeps, KSS changed by -6.0 on average and the rule cost by -0.16.
 - For 20 one-off people, who have no baseline, the model was no better than always guessing the panel average (error 1.55 vs 1.53 KSS points).
 
-## Does typing add anything to hours awake?
+## How well does typing predict tiredness?
 
-Each person is predicted by a model trained on everyone else. Anchored models predict the change from the person's own baseline rating, then add it back.
+Each person is predicted by a model trained on everyone else. Anchored models predict the change from the person's own baseline rating, then add it back. Predictions use typing only; hours awake is a benchmark, because the demo can't ask for it.
 
 | Model | Error (MAE, KSS points) | Spearman | Spearman within person (median) |
 |---|---|---|---|
 | Training mean | 1.93 | – | – |
 | Own baseline rating | 3.15 | – | – |
-| Hours awake | 1.40 | 0.60 | 0.88 |
-| Typing only | 2.30 | -0.00 | -0.03 |
-| Hours awake + typing (main) | 1.45 | 0.59 | 0.85 |
-| Hours awake + typing + reaction test | 1.46 | 0.61 | 0.82 |
-| Hours awake + typing, no rule cost | 1.33 | 0.64 | 0.85 |
-| Hours awake + typing, not anchored | 1.44 | 0.60 | 0.86 |
+| Hours awake (benchmark) | 1.40 | 0.60 | 0.88 |
+| Typing only (main) | 2.24 | -0.05 | -0.17 |
+| Typing + reaction test | 2.26 | -0.08 | -0.23 |
+| Typing without rule cost | 2.23 | -0.02 | -0.19 |
+| Typing, not anchored | 1.95 | -0.48 | -0.26 |
+| Typing + hours awake (check only) | 1.57 | 0.52 | 0.82 |
 
-**Main test.** Adding typing to hours awake changes the error from 1.40 to 1.45 KSS points. Shuffling the typing features within each person 500 times gives p = 0.361.
+**Clock check.** Adding typing to hours awake changes the error from 1.40 to 1.57 KSS points. Shuffling the typing features within each person 500 times gives p = 0.727. A small p-value means typing knows something the clock doesn't.
 
-**Original test.** Shuffling ratings within each person, as in the plan, gives a typing-only error of 2.14 and p = 0.964. This test can't tell typing apart from anything else that drifts over the night.
+**Original test.** Shuffling ratings within each person, as in the plan, gives a typing-only error of 1.95 and p = 0.473. This test can't tell typing apart from anything else that drifts over the night.
 
-**Tired vs alert** (above each person's median KSS or not): AUC 0.67 with hours awake and typing, 0.79 with hours awake alone.
+**Tired vs alert** (above each person's median KSS or not): AUC 0.51 with typing alone, 0.79 with hours awake alone.
 
 ![Permutation tests](figures/permutation_tests.png)
 
@@ -92,8 +93,8 @@ A model trained on all panel check-ins, using only features that need no baselin
 
 ## Notes
 
-- Typing features in the models: vt_rule_cost_dev, vt_shift_lead_med_dev, vt_wpm_dev, vt_gap_cv_dev, vt_hold_med_dev, vt_pause1s_share_dev, vt_accuracy_dev, backspace_per100, ft_word_gap_med_dev, ft_pause2s_share_dev.
-- Fixed features with no data here: wpm_ratio_dev, gap_ratio_dev, cv_ratio_dev, acc_diff_dev.
-- Reaction-test features: rt_speed_dev, rt_lapse_rate_dev.
+- Typing features in the models: vt_rule_cost_dev, backspace_per100, vt_accuracy_dev, vt_gap_cv_dev, vt_pause1s_share_dev, vt_hold_med_dev, ft_pause2s_share_dev.
+- Fixed features with no data here: none.
+- Reaction-test features: rt_lapse_rate_dev.
 - `_dev` features are each person's change from the average of their first two check-ins. Backspaces per 100 keys are used as they are. Hours awake reset after a sleep of an hour or more.
 - Lapses are reaction times of 355 ms or more, the cut-off for the 3-minute test.
