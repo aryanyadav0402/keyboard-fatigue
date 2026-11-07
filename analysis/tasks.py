@@ -87,6 +87,64 @@ def capitalise_vowels(sentence: str) -> str:
     return "".join(c.upper() if c in VOWELS else c for c in sentence)
 
 
+def capitalise_first_and_last(sentence: str) -> str:
+    """Capitalise the first and last letter of every word (a one-letter word becomes a capital)."""
+    return " ".join(w[0].upper() + w[1:-1] + w[-1].upper() if len(w) > 1 else w.upper()
+                    for w in sentence.split(" "))
+
+
+# The check-in app's Task 1 rules (typing_station/dev/make_questions.py), so every expected answer
+# can be recomputed here rather than trusted. All of them swap characters one for one, so the
+# expected answer lines up with the source sentence position by position.
+RULES = {
+    "capitalize_vowels": capitalise_vowels,
+    "dashes_for_spaces": lambda s: s.replace(" ", "-"),
+    "dots_and_vowels": lambda s: capitalise_vowels(s).replace(" ", "."),
+    "dashes_and_vowels": lambda s: capitalise_vowels(s).replace(" ", "-"),
+    "capitalize_first_and_last": capitalise_first_and_last,
+}
+
+# The app's question pool (id, rule type, sentence), used by the simulator.
+APP_QUESTIONS = [
+    (1, "capitalize_vowels", "the calico cat gave a pretty flower to the angry cow"),
+    (2, "dashes_for_spaces", "a sleepy panda shared a sweet red apple with a tiny duck"),
+    (3, "capitalize_vowels", "three fluffy bunnies baked a giant blueberry pie"),
+    (4, "dots_and_vowels", "the baby otter floated down the calm blue river"),
+    (5, "capitalize_vowels", "a cheerful Shiba Inu wore a tiny yellow raincoat"),
+    (6, "dashes_and_vowels", "the polite pig invited the hedgehog to tea"),
+    (7, "capitalize_vowels", "a curious raccoon found a shiny golden key"),
+    (8, "capitalize_first_and_last", "the clumsy bear dropped his favorite jar of honey"),
+    (9, "capitalize_vowels", "the grumpy owl read a bedtime story to a tiny mouse"),
+    (10, "dots_and_vowels", "a happy little capybara took a warm bath"),
+    (11, "capitalize_vowels", "the hungry caterpillar munched through seven green leaves"),
+    (12, "dashes_for_spaces", "a gentle giraffe nibbled leaves from the tallest tree"),
+    (13, "dashes_for_spaces", "the quiet rabbit hid behind a mossy wooden gate"),
+    (14, "dashes_for_spaces", "the cheerful chef baked fresh bread for the village"),
+    (15, "dashes_for_spaces", "a brave little mouse carried cheese across the kitchen"),
+    (16, "dashes_for_spaces", "the tired farmer fed the hungry goats at sunset"),
+    (17, "dots_and_vowels", "the shy penguin slid across the frozen pond"),
+    (18, "dots_and_vowels", "the sleepy kitten curled up beside the warm fire"),
+    (19, "dots_and_vowels", "two playful puppies chased the bouncing orange ball"),
+    (20, "dots_and_vowels", "a wise tortoise told stories to the village children"),
+    (21, "dashes_and_vowels", "the lazy sloth napped under a purple umbrella"),
+    (22, "dashes_and_vowels", "a clever fox borrowed a map from the old owl"),
+    (23, "dashes_and_vowels", "the friendly dolphin splashed the excited children"),
+    (24, "dashes_and_vowels", "a cheerful robin sang a song at the window"),
+    (25, "dashes_and_vowels", "the kind farmer gave a warm blanket to the lamb"),
+    (26, "capitalize_first_and_last", "the tiny hamster stored seeds inside his cozy wheel"),
+    (27, "capitalize_first_and_last", "the proud peacock spread his shimmering blue feathers"),
+    (28, "capitalize_first_and_last", "the gentle whale hummed slow songs to the moon"),
+    (29, "capitalize_first_and_last", "the sleepy koala hugged his branch in the old tree"),
+    (30, "capitalize_first_and_last", "the brave knight rescued two small dragons from rain"),
+]
+
+
+def apply_rule(question_type: str | None, source: str) -> str | None:
+    """The expected answer for a Task 1 question, or None for a rule we don't know."""
+    rule = RULES.get(question_type)
+    return rule(source) if rule else None
+
+
 def vowel_count(sentence: str) -> int:
     return sum(c in VOWELS for c in sentence)
 

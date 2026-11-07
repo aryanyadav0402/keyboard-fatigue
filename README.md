@@ -4,13 +4,13 @@ Our HackTheBurgh XIII project: we predict how tired someone is from how they typ
 
 ## How it works
 
-People on our overnight panel do a check-in every hour or so while they're awake, plus one just before and one just after sleeping. Everyone uses one shared laptop, so the keyboard is always the same. Each check-in has:
+People on our overnight panel do a check-in every hour or so while they're awake. Everyone uses one shared laptop, so the keyboard is always the same. Each check-in in the check-in app (`typing_station.zip`) has:
 
-1. A self-report, including sleepiness on the Karolinska Sleepiness Scale (KSS: 1 is extremely alert, 9 is fighting sleep) and when they last woke up.
-2. A sentence to type with every vowel (a, e, i, o, u, not y) capitalised, using Shift.
-3. A 3-minute reaction-time test.
+1. Their name and five quick questions, including sleepiness on the Karolinska Sleepiness Scale (KSS: 1 is extremely alert, 9 is fighting sleep).
+2. A sentence to retype with a small rule, such as capitalising every vowel or replacing spaces with dashes. The rule rotates between five types, so nobody can learn it.
+3. A 20-second reaction-time test.
 
-The vowel rule adds mental load. Within the same sentence, we compare the gaps next to a capital with the gaps between ordinary letters. That cancels out each person's own typing speed, and we expect tired people to pay more for the rule.
+The rule adds mental load. Within the same sentence, we compare the gaps next to the keys the rule changes (capitals, dashes, dots) with the gaps between ordinary letters. That cancels out each person's own typing speed, and we expect tired people to pay more for the rule.
 
 A few one-off people, such as judges, do one or two check-ins. They're our test set, and we never train on them.
 
@@ -23,7 +23,7 @@ cd analysis
 uv sync
 ```
 
-Put the check-in app's session files (one JSON file per check-in) in `data/sessions/` at the top of the repo, then run:
+The check-in app saves each check-in as a JSON file under `data/sessions/<NAME>/` on the laptop running it. Copy that `sessions` folder to `data/sessions/` at the top of this repo, then run:
 
 ```bash
 uv run python run_all.py --data ../data/sessions --out results/latest
@@ -50,7 +50,8 @@ The simulator writes check-ins in the app's format for two worlds: one where fat
 
 - **Features:** typing speed, rhythm, pauses, key hold times, errors, the vowel rule's cost and Shift timing, and the reaction test's median, speed and lapses. Timings leave out Shift presses and corrections. `features_raw.csv` has each feature as measured. `features_processed.csv` has each one as a change from the person's first two check-ins, with backspaces per 100 keys left as they are, and the models use its columns.
 - **Models:** ridge regression predicts each person's change in KSS from their own first two check-ins, using 6 typing features: the vowel rule's cost, backspaces, accuracy, rhythm unevenness, long pauses and key hold time. Predictions use typing only, because the demo can't ask how long someone has been awake. Every person is predicted by a model trained on everyone else, and a logistic regression separates tired check-ins from alert ones.
-- **Hours awake as a benchmark:** we compare typing alone with hours awake alone. Over one night, practice, tiredness and the clock all drift together, so a clock check also tests whether typing adds anything to hours awake, by shuffling the typing features within each person.
+- **The clock as a benchmark:** we compare typing alone with the clock alone. The clock is hours awake when the app records a wake-up time, and otherwise hours since the person's first check-in. Over one night, practice, tiredness and the clock all drift together, so a clock check also tests whether typing adds anything to the clock, by shuffling the typing features within each person.
+- **Rule types:** some of the app's five rules are harder than others, so each Task 1 feature is first adjusted by subtracting that rule's average.
 
 | File | What it does |
 |---|---|

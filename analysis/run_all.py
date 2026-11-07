@@ -32,7 +32,7 @@ def main() -> None:
     report = write_outputs(tables, features, results, args.out, args.data)
     if "beyond_clock" in results:
         b, o, mae = results["beyond_clock"], results["original"], results["table"].MAE
-        print(f"Typing alone: error {mae[MAIN]:.2f}; hours awake alone: {b['clock_mae']:.2f}; typing + hours: "
+        print(f"Typing alone: error {mae[MAIN]:.2f}; clock alone: {b['clock_mae']:.2f}; typing + clock: "
               f"{b['main_mae']:.2f} (clock check p = {b['p']:.3f}; original test p = {o['p']:.3f})")
     print(f"Done in {time.time() - start:.0f} s. Report: {report}")
 

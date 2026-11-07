@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from tasks import capitalise_vowels
+from tasks import apply_rule
 
 # Cohorts that make up the overnight panel. Every other cohort is a one-off (the held-out test set).
 PANEL_COHORTS = {"teammate", "panel", "overnight"}
@@ -37,6 +37,7 @@ class Tables:
     pvt: pd.DataFrame
     problems: list[str] = field(default_factory=list)
     skipped_test_runs: int = 0
+    skipped_partial: int = 0
 
 
 def number(value) -> float:
@@ -89,6 +90,7 @@ def read_session(path: Path) -> dict:
         "cohort": cohort,
         "participant_type": "panel" if cohort.lower() in PANEL_COHORTS else "oneoff",
         "file": path.name,
+        "status": str(d.get("status") or "final"),
         "timestamp": timestamp,
         "epoch_ms": clock.get("start_epoch_ms"),
         "test_mode": bool(d.get("test_mode")),
@@ -109,16 +111,21 @@ def read_session(path: Path) -> dict:
         task = tasks.get(u["task"], {})
         name = TASK_NAMES.get(u.get("kind"), str(u.get("kind")))
         source, expected = u.get("source"), u.get("expected")
+        # Task 1's rule rotates (vowels, dashes, dots...); files from before that were all vowels.
+        question_type = u.get("question_type") or ("capitalize_vowels" if name == "rule" else None)
         if name == "rule" and source:
-            if expected is not None and expected != capitalise_vowels(source):
-                problems.append(f"{path.name}: expected answer for '{source}' is wrong in the app")
-            expected = capitalise_vowels(source)  # never trust a hand-written answer
+            computed = apply_rule(question_type, source)
+            if computed is not None:
+                if expected is not None and expected != computed:
+                    problems.append(f"{path.name}: the app's expected answer for '{source}' breaks the {question_type} rule")
+                expected = computed  # recompute rather than trust a stored answer
         elif name == "plain" and source:
             expected = source
         units.append({
             "checkin_id": cid, "task_idx": u["task"], "unit": u.get("unit", 0), "task": name,
+            "question_type": question_type,
             "practice": "practice" in str(task.get("name", "")),
-            "expected": expected, "typed": u.get("typed") or "",
+            "source": source, "expected": expected, "typed": u.get("typed") or "",
             "t_shown": u.get("t_shown"), "t_first_key": u.get("t_first_key"), "t_end": u.get("t_end"),
             "focus_losses": focus_losses(ui, task.get("t_start", -math.inf), task.get("t_end")),
         })
@@ -139,9 +146,13 @@ def read_session(path: Path) -> dict:
 
 
 def load_sessions(folder: str | Path) -> Tables:
-    """Read every session file under folder, skipping test runs and unreadable files."""
-    sessions, units, keys, pvt, problems = [], [], [], [], []
-    skipped_tests, seen = 0, set()
+    """Read every session file under folder.
+
+    Test runs and the app's in-progress checkpoints are skipped. When the same session appears more
+    than once (say, a copy in Downloads too), the most complete copy wins.
+    """
+    best, problems = {}, []
+    skipped_tests = skipped_partial = 0
     for path in sorted(Path(folder).rglob("*.json")):
         try:
             s = read_session(path)
@@ -151,10 +162,15 @@ def load_sessions(folder: str | Path) -> Tables:
         if s["session"]["test_mode"]:
             skipped_tests += 1
             continue
-        if s["session"]["checkin_id"] in seen:
-            problems.append(f"{path.name}: skipped, same session as another file")
+        if s["session"]["status"] == "in_progress":
+            skipped_partial += 1
             continue
-        seen.add(s["session"]["checkin_id"])
+        cid = s["session"]["checkin_id"]
+        rank = (s["session"]["completed"], len(s["keys"]), len(s["pvt"]))
+        if cid not in best or rank > best[cid][0]:
+            best[cid] = (rank, s)
+    sessions, units, keys, pvt = [], [], [], []
+    for _, s in best.values():
         sessions.append(s["session"])
         units += s["units"]
         keys += s["keys"]
@@ -167,4 +183,5 @@ def load_sessions(folder: str | Path) -> Tables:
         pvt=pd.DataFrame(pvt, columns=None if pvt else ["checkin_id", "phase", "rt_ms", "outcome"]),
         problems=problems,
         skipped_test_runs=skipped_tests,
+        skipped_partial=skipped_partial,
     )

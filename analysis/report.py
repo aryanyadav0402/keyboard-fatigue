@@ -92,13 +92,13 @@ def make_figures(f: pd.DataFrame, r: dict, folder: Path) -> dict:
                  fontsize=10)
     made["tiredness"] = save(fig, folder / "tiredness_over_night.png")
 
-    if "vt_rule_cost" in panel and panel.vt_rule_cost.notna().any():
+    if "vt_rule_cost_adj" in panel and panel.vt_rule_cost_adj.notna().any():
         fig, ax = plt.subplots(figsize=(6.5, 4))
-        for person, g in panel.dropna(subset=["hours_awake", "vt_rule_cost"]).groupby("person"):
-            ax.plot(g.hours_awake, g.vt_rule_cost, "-o", ms=3, lw=1, label=person)
-        ax.set_xlabel("hours awake")
-        ax.set_ylabel("rule cost (gap next to a capital ÷ ordinary gap)")
-        ax.set_title("Vowel-rule cost against hours awake, in time order")
+        for person, g in panel.dropna(subset=["hours_clock", "vt_rule_cost_adj"]).groupby("person"):
+            ax.plot(g.hours_clock, g.vt_rule_cost_adj, "-o", ms=3, lw=1, label=person)
+        ax.set_xlabel(clock_basis(panel))
+        ax.set_ylabel("rule cost, adjusted for the rule type")
+        ax.set_title("Task 1 rule cost over the night, in time order")
         ax.legend(fontsize=7, ncol=2)
         made["rule_cost"] = save(fig, folder / "rule_cost_vs_hours.png")
 
@@ -107,7 +107,7 @@ def make_figures(f: pd.DataFrame, r: dict, folder: Path) -> dict:
         b, o = r["beyond_clock"], r["original"]
         axes[0].hist(b["null"], bins=30, color="#9aa5b1")
         axes[0].axvline(b["improvement"], color="#d1495b", lw=2, label=f"real data, {p_eq(b['p'])}")
-        axes[0].set_xlabel("error cut by adding typing to hours awake (KSS points)")
+        axes[0].set_xlabel("error cut by adding typing to the clock (KSS points)")
         axes[0].set_title("Clock check: typing shuffled within each person", fontsize=10)
         axes[1].hist(o["null"], bins=30, color="#9aa5b1")
         axes[1].axvline(o["mae"], color="#d1495b", lw=2, label=f"real data, {p_eq(o['p'])}")
@@ -153,41 +153,47 @@ def mixed_section(name: str, m: dict) -> list[str]:
     return lines + [""]
 
 
+def clock_basis(f: pd.DataFrame) -> str:
+    """What the clock means for this data: hours awake, or hours since the first check-in."""
+    return f.clock_basis.mode().iloc[0] if "clock_basis" in f and len(f) else "hours awake"
+
+
 def findings(r: dict) -> list[str]:
     out = []
+    clock = r.get("clock_basis", "hours awake")
     if "table" in r:
         t = r["table"].MAE
-        better = "better than" if t[MAIN] < t["Hours awake (benchmark)"] else "no better than"
+        better = "better than" if t[MAIN] < t["Clock (benchmark)"] else "no better than"
         out.append(f"Typing alone predicted tiredness with an average error of {num(t[MAIN])} KSS points, {better} "
-                   f"hours awake alone ({num(t['Hours awake (benchmark)'])}). Always guessing the average gives "
+                   f"the clock alone ({clock}: {num(t['Clock (benchmark)'])}). Always guessing the average gives "
                    f"{num(t['Training mean'])}.")
     if "beyond_clock" in r:
         b = r["beyond_clock"]
         if b["p"] < 0.05 and b["improvement"] > 0:
-            out.append(f"Clock check: typing carries information beyond hours awake. Adding it to hours awake cut the "
+            out.append(f"Clock check: typing carries information beyond the clock. Adding it to the clock cut the "
                        f"error from {num(b['clock_mae'])} to {num(b['main_mae'])} KSS points (shuffle test {p_eq(b['p'])}).")
         else:
-            out.append(f"Clock check: typing didn't clearly add anything to hours awake (error {num(b['clock_mae'])} → "
+            out.append(f"Clock check: typing didn't clearly add anything to the clock (error {num(b['clock_mae'])} → "
                        f"{num(b['main_mae'])}, shuffle test {p_eq(b['p'])}), so part of what it picks up may just be "
                        "how late it is.")
         o = r["original"]
         text = f"The original test, which shuffles ratings within each person, gives {p_eq(o['p'])}."
         if o["p"] < 0.05 and b["p"] >= 0.05:
             text += (" It would call typing predictive, but only because typing and tiredness both drift over the"
-                     " night; the clock check shows typing adds nothing beyond hours awake.")
+                     " night; the clock check shows typing adds nothing beyond the clock.")
         out.append(text)
     rule = r.get("mixed", {}).get("Rule cost", {})
-    if "table" in rule and "hours_awake" in rule["table"].index:
-        row = rule["table"].loc["hours_awake"]
+    if "table" in rule and "hours_clock" in rule["table"].index:
+        row = rule["table"].loc["hours_clock"]
         verdict = ("so tired brains do pay more for the rule" if row.ci_low > 0
                    else "so the rule cost fell rather than rose" if row.ci_high < 0
                    else "which isn't clearly different from zero")
-        out.append(f"After allowing for practice, the rule cost changed by {num(row.coef, 3)} per hour awake "
-                   f"(95% CI {num(row.ci_low, 3)} to {num(row.ci_high, 3)}), {verdict}.")
+        out.append(f"After allowing for practice and the rule type, the rule cost changed by {num(row.coef, 3)} per "
+                   f"hour on the clock (95% CI {num(row.ci_low, 3)} to {num(row.ci_high, 3)}), {verdict}.")
     c = r.get("rule_control")
     if c:
-        out.append(f"Gaps next to a capital took {num(c['median_ratio'])}× as long as ordinary gaps "
-                   f"(Wilcoxon {p_eq(c['p'])}, {c['n']} check-ins), so the vowel rule does cost time.")
+        out.append(f"Gaps next to a rule key (a capital, dash or dot) took {num(c['median_ratio'])}× as long as "
+                   f"ordinary gaps (Wilcoxon {p_eq(c['p'])}, {c['n']} check-ins), so the rules do cost time.")
     s = r.get("sleep")
     if s is not None and len(s):
         out.append(f"Across {len(s)} sleeps, KSS changed by {num((s.kss_after - s.kss_before).mean(), 1)} on average "
@@ -210,8 +216,14 @@ def report_text(tables: Tables, f: pd.DataFrame, r: dict, figures: dict, data_di
                f"{len(r['scored'])} panel check-ins are scored; each person's first 2 are their baseline.")
     if tables.skipped_test_runs:
         summary += f" {tables.skipped_test_runs} test runs were skipped."
+    if tables.skipped_partial:
+        summary += f" {tables.skipped_partial} in-progress checkpoint files were skipped."
     lines += [summary, ""]
-    for task, label in (("vt", "vowel task"), ("ft", "free text")):
+    if "question_type" in f and f.question_type.notna().any():
+        counts = f.question_type.value_counts()
+        lines.append("- Task 1 rules shown: " + ", ".join(f"{t} {n}" for t, n in counts.items()) + ".")
+    lines.append(f"- The clock is {clock_basis(panel if len(panel) else f)}.")
+    for task, label in (("vt", "Task 1"), ("ft", "free text")):
         col = f"{task}_focus_losses"
         if col in f and (f[col] > 0).any():
             lines.append(f"- {int((f[col] > 0).sum())} {label} timings dropped because the page lost focus.")
@@ -228,14 +240,14 @@ def report_text(tables: Tables, f: pd.DataFrame, r: dict, figures: dict, data_di
     if "table" in r:
         lines += ["## How well does typing predict tiredness?", "",
                   "Each person is predicted by a model trained on everyone else. Anchored models predict the change "
-                  "from the person's own baseline rating, then add it back. Predictions use typing only; hours awake "
-                  "is a benchmark, because the demo can't ask for it.", "",
+                  "from the person's own baseline rating, then add it back. Predictions use typing only; the clock "
+                  f"({r.get('clock_basis', 'hours awake')}) is a benchmark, because the demo can't ask for it.", "",
                   "| Model | Error (MAE, KSS points) | Spearman | Spearman within person (median) |",
                   "|---|---|---|---|"]
         for name, row in r["table"].iterrows():
             lines.append(f"| {name} | {num(row.MAE)} | {num(row.Spearman)} | {num(row['Spearman within person'])} |")
         b, o = r["beyond_clock"], r["original"]
-        lines += ["", f"**Clock check.** Adding typing to hours awake changes the error from {num(b['clock_mae'])} to "
+        lines += ["", f"**Clock check.** Adding typing to the clock changes the error from {num(b['clock_mae'])} to "
                       f"{num(b['main_mae'])} KSS points. Shuffling the typing features within each person "
                       f"{len(b['null'])} times gives {p_eq(b['p'])}. A small p-value means typing knows something "
                       "the clock doesn't.", "",
@@ -243,7 +255,7 @@ def report_text(tables: Tables, f: pd.DataFrame, r: dict, figures: dict, data_di
                   f"error of {num(o['mae'])} and {p_eq(o['p'])}. This test can't tell typing apart from anything "
                   "else that drifts over the night.", "",
                   f"**Tired vs alert** (above each person's median KSS or not): AUC {num(r['auc'])} with typing "
-                  f"alone, {num(r['auc_clock'])} with hours awake alone.", ""]
+                  f"alone, {num(r['auc_clock'])} with the clock alone.", ""]
         if "permutation" in figures:
             lines += [f"![Permutation tests](figures/{figures['permutation']})", ""]
         if "tiredness" in figures:
@@ -254,12 +266,12 @@ def report_text(tables: Tables, f: pd.DataFrame, r: dict, figures: dict, data_di
         for name, m in r["mixed"].items():
             lines += mixed_section(name, m)
         if "rule_cost" in figures:
-            lines += [f"![Rule cost against hours awake](figures/{figures['rule_cost']})", ""]
+            lines += [f"![Rule cost over the night](figures/{figures['rule_cost']})", ""]
 
     c = r.get("rule_control")
     if c:
-        lines += ["## Is the vowel rule really harder?", "",
-                  f"Median gap next to a capital ÷ median ordinary gap: {num(c['median_ratio'])} across {c['n']} "
+        lines += ["## Do the rules really cost time?", "",
+                  f"Median gap next to a rule key ÷ median ordinary gap: {num(c['median_ratio'])} across {c['n']} "
                   f"check-ins (Wilcoxon signed-rank {p_eq(c['p'])})."]
         if "plain_p" in c:
             lines.append(f"Vowel-task wpm ÷ plain wpm: {num(c['plain_wpm_ratio'])} (Wilcoxon {p_eq(c['plain_p'])}).")
@@ -290,9 +302,14 @@ def report_text(tables: Tables, f: pd.DataFrame, r: dict, figures: dict, data_di
               f"- Typing features in the models: {', '.join(r['typing']) or 'none yet'}.",
               f"- Fixed features with no data here: {', '.join(r['inactive']) or 'none'}.",
               f"- Reaction-test features: {', '.join(r['rt']) or 'none yet'}.",
+              "- Task 1's rule changes every visit, so its features are first adjusted for the rule type (minus "
+              "that rule's average, plus the overall average).",
               "- `_dev` features are each person's change from the average of their first two check-ins. "
-              "Backspaces per 100 keys are used as they are. Hours awake reset after a sleep of an hour or more.",
-              "- Lapses are reaction times of 355 ms or more, the cut-off for the 3-minute test.", ""]
+              "Backspaces per 100 keys aren't compared with the baseline.",
+              "- The clock is hours awake when the app records a wake-up time (reset after a sleep of an hour or "
+              "more), and otherwise hours since the person's first check-in.",
+              "- Lapses are reaction times of 355 ms or more. The app's 20-second test gives only about 6-9 trials, "
+              "so the reaction-test comparison uses response speed (the mean of 1000 ÷ reaction time) instead.", ""]
     return "\n".join(lines)
 
 

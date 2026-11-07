@@ -1,41 +1,41 @@
 # Tiredness from typing: results
 
-Data from `../data/sim/null`, analysed Sat 07 Nov 19:29. 122 check-ins: 95 from 7 panel people and 27 from 20 one-off people. 81 panel check-ins are scored; each person's first 2 are their baseline.
+Data from `../data/sim/null`, analysed Sat 07 Nov 20:09. 129 check-ins: 96 from 7 panel people and 33 from 20 one-off people. 81 panel check-ins are scored; each person's first 2 are their baseline. 12 in-progress checkpoint files were skipped.
 
-- 4 vowel task timings dropped because the page lost focus.
-- 10 free text timings dropped because the page lost focus.
-- 4 check-ins were stopped early; their finished tasks are used.
+- Task 1 rules shown: dashes_for_spaces 30, dots_and_vowels 29, capitalize_vowels 25, dashes_and_vowels 23, capitalize_first_and_last 22.
+- The clock is hours since first check-in.
+- 1 Task 1 timings dropped because the page lost focus.
+- 6 check-ins were stopped early; their finished tasks are used.
 
 ## Findings
 
-- Typing alone predicted tiredness with an average error of 2.25 KSS points, no better than hours awake alone (1.40). Always guessing the average gives 1.93.
-- Clock check: typing didn't clearly add anything to hours awake (error 1.40 → 1.57, shuffle test p = 0.752), so part of what it picks up may just be how late it is.
-- The original test, which shuffles ratings within each person, gives p = 0.381.
-- After allowing for practice, the rule cost changed by -0.002 per hour awake (95% CI -0.008 to 0.004), which isn't clearly different from zero.
-- Gaps next to a capital took 1.32× as long as ordinary gaps (Wilcoxon p < 0.001, 118 check-ins), so the vowel rule does cost time.
-- Across 3 sleeps, KSS changed by -6.0 on average and the rule cost by -0.16.
-- For 20 one-off people, who have no baseline, the model was no better than always guessing the panel average (error 1.55 vs 1.53 KSS points).
+- Typing alone predicted tiredness with an average error of 1.79 KSS points, no better than the clock alone (hours since first check-in: 1.62). Always guessing the average gives 2.10.
+- Clock check: typing didn't clearly add anything to the clock (error 1.62 → 1.72, shuffle test p = 0.511), so part of what it picks up may just be how late it is.
+- The original test, which shuffles ratings within each person, gives p = 0.417.
+- After allowing for practice and the rule type, the rule cost changed by 0.003 per hour on the clock (95% CI -0.016 to 0.022), which isn't clearly different from zero.
+- Gaps next to a rule key (a capital, dash or dot) took 1.33× as long as ordinary gaps (Wilcoxon p < 0.001, 128 check-ins), so the rules do cost time.
+- For 20 one-off people, who have no baseline, the model was no better than always guessing the panel average (error 1.92 vs 1.89 KSS points).
 
 ## How well does typing predict tiredness?
 
-Each person is predicted by a model trained on everyone else. Anchored models predict the change from the person's own baseline rating, then add it back. Predictions use typing only; hours awake is a benchmark, because the demo can't ask for it.
+Each person is predicted by a model trained on everyone else. Anchored models predict the change from the person's own baseline rating, then add it back. Predictions use typing only; the clock (hours since first check-in) is a benchmark, because the demo can't ask for it.
 
 | Model | Error (MAE, KSS points) | Spearman | Spearman within person (median) |
 |---|---|---|---|
-| Training mean | 1.93 | – | – |
-| Own baseline rating | 3.15 | – | – |
-| Hours awake (benchmark) | 1.40 | 0.60 | 0.88 |
-| Typing only (main) | 2.25 | -0.03 | -0.16 |
-| Typing + reaction test | 2.26 | -0.06 | -0.13 |
-| Typing without rule cost | 2.21 | -0.01 | -0.14 |
-| Typing, not anchored | 1.95 | -0.46 | -0.20 |
-| Typing + hours awake (check only) | 1.57 | 0.52 | 0.82 |
+| Training mean | 2.10 | – | – |
+| Own baseline rating | 2.77 | – | – |
+| Clock (benchmark) | 1.62 | 0.41 | 0.73 |
+| Typing only (main) | 1.79 | 0.35 | -0.04 |
+| Typing + reaction test | 1.79 | 0.36 | -0.18 |
+| Typing without rule cost | 1.81 | 0.33 | -0.10 |
+| Typing, not anchored | 2.21 | -0.44 | -0.11 |
+| Typing + clock (check only) | 1.72 | 0.35 | 0.48 |
 
-**Clock check.** Adding typing to hours awake changes the error from 1.40 to 1.57 KSS points. Shuffling the typing features within each person 500 times gives p = 0.752. A small p-value means typing knows something the clock doesn't.
+**Clock check.** Adding typing to the clock changes the error from 1.62 to 1.72 KSS points. Shuffling the typing features within each person 500 times gives p = 0.511. A small p-value means typing knows something the clock doesn't.
 
-**Original test.** Shuffling ratings within each person, as in the plan, gives a typing-only error of 1.95 and p = 0.381. This test can't tell typing apart from anything else that drifts over the night.
+**Original test.** Shuffling ratings within each person, as in the plan, gives a typing-only error of 2.20 and p = 0.417. This test can't tell typing apart from anything else that drifts over the night.
 
-**Tired vs alert** (above each person's median KSS or not): AUC 0.53 with typing alone, 0.79 with hours awake alone.
+**Tired vs alert** (above each person's median KSS or not): AUC 0.46 with typing alone, 0.74 with the clock alone.
 
 ![Permutation tests](figures/permutation_tests.png)
 
@@ -45,56 +45,48 @@ Each person is predicted by a model trained on everyone else. Anchored models pr
 
 ### Tiredness
 
-`kss ~ hours_awake + log_checkin + vt_gap_cv_dev + vt_rule_cost_dev`, random intercept per person.
+`kss ~ hours_clock + log_checkin + vt_gap_cv_dev + vt_rule_cost_dev`, random intercept per person.
 
-91 check-ins from 7 people.
+92 check-ins from 7 people.
 
 | Term | Coefficient | 95% CI | p |
 |---|---|---|---|
-| Intercept | 1.183 | 0.284 to 2.082 | 0.010 |
-| hours_awake | 0.249 | 0.195 to 0.303 | < 0.001 |
-| log_checkin | 1.104 | 0.668 to 1.540 | < 0.001 |
-| vt_gap_cv_dev | 1.194 | -1.059 to 3.448 | 0.299 |
-| vt_rule_cost_dev | 2.327 | 0.446 to 4.208 | 0.015 |
+| Intercept | 2.409 | 0.964 to 3.853 | 0.001 |
+| hours_clock | 0.016 | -0.146 to 0.177 | 0.850 |
+| log_checkin | 1.415 | 0.245 to 2.585 | 0.018 |
+| vt_gap_cv_dev | 0.952 | -2.184 to 4.087 | 0.552 |
+| vt_rule_cost_dev | -0.239 | -2.063 to 1.586 | 0.798 |
 
 ### Rule cost
 
-`vt_rule_cost ~ hours_awake + log_checkin`, random intercept per person.
+`vt_rule_cost_adj ~ hours_clock + log_checkin`, random intercept per person.
 
-91 check-ins from 7 people.
+95 check-ins from 7 people.
 
 | Term | Coefficient | 95% CI | p |
 |---|---|---|---|
-| Intercept | 1.470 | 1.378 to 1.561 | < 0.001 |
-| hours_awake | -0.002 | -0.008 to 0.004 | 0.502 |
-| log_checkin | -0.081 | -0.127 to -0.034 | < 0.001 |
+| Intercept | 1.415 | 1.296 to 1.533 | < 0.001 |
+| hours_clock | 0.003 | -0.016 to 0.022 | 0.772 |
+| log_checkin | -0.077 | -0.214 to 0.060 | 0.271 |
 
-![Rule cost against hours awake](figures/rule_cost_vs_hours.png)
+![Rule cost over the night](figures/rule_cost_vs_hours.png)
 
-## Is the vowel rule really harder?
+## Do the rules really cost time?
 
-Median gap next to a capital ÷ median ordinary gap: 1.32 across 118 check-ins (Wilcoxon signed-rank p < 0.001).
-
-## Before and after sleep
-
-| Person | Slept (min) | KSS | Rule cost | Median RT (ms) |
-|---|---|---|---|---|
-| P02-XETJ | 162 | 9 → 1 | 1.33 → 1.25 | 273 → 276 |
-| P05-FBRG | 179 | 9 → 3 | 1.47 → 1.15 | 261 → 263 |
-| P07-WXGF | 171 | 7 → 3 | 1.23 → 1.14 | 270 → 264 |
-
-![Before and after sleep](figures/before_after_sleep.png)
+Median gap next to a rule key ÷ median ordinary gap: 1.33 across 128 check-ins (Wilcoxon signed-rank p < 0.001).
 
 ## One-off people
 
-A model trained on all panel check-ins, using only features that need no baseline (vt_rule_cost, vt_gap_cv, vt_accuracy, backspace_per100), predicted 27 check-ins from 20 one-off people with an error of 1.55 KSS points. Always guessing the panel average gives 1.53.
+A model trained on all panel check-ins, using only features that need no baseline (vt_rule_cost_adj, vt_gap_cv_adj, vt_accuracy_adj, backspace_per100_adj), predicted 33 check-ins from 20 one-off people with an error of 1.92 KSS points. Always guessing the panel average gives 1.89.
 
 ![Reaction time over the night](figures/reaction_time_over_night.png)
 
 ## Notes
 
-- Typing features in the models: vt_rule_cost_dev, backspace_per100, vt_accuracy_dev, vt_gap_cv_dev, vt_pause1s_share_dev, vt_hold_med_dev.
+- Typing features in the models: vt_rule_cost_dev, backspace_per100_adj, vt_accuracy_dev, vt_gap_cv_dev, vt_pause1s_share_dev, vt_hold_med_dev.
 - Fixed features with no data here: none.
-- Reaction-test features: rt_lapse_rate_dev.
-- `_dev` features are each person's change from the average of their first two check-ins. Backspaces per 100 keys are used as they are. Hours awake reset after a sleep of an hour or more.
-- Lapses are reaction times of 355 ms or more, the cut-off for the 3-minute test.
+- Reaction-test features: rt_speed_dev.
+- Task 1's rule changes every visit, so its features are first adjusted for the rule type (minus that rule's average, plus the overall average).
+- `_dev` features are each person's change from the average of their first two check-ins. Backspaces per 100 keys aren't compared with the baseline.
+- The clock is hours awake when the app records a wake-up time (reset after a sleep of an hour or more), and otherwise hours since the person's first check-in.
+- Lapses are reaction times of 355 ms or more. The app's 20-second test gives only about 6-9 trials, so the reaction-test comparison uses response speed (the mean of 1000 ÷ reaction time) instead.

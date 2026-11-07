@@ -1,13 +1,14 @@
 """Tiredness models and their evaluation, leaving one panel person out at a time.
 
 Predictions use typing only, because the demo can't ask people how long they've been awake.
-Hours awake is still recorded, and the evaluation uses it in two ways:
+The clock (hours awake when the app records a wake-up time, otherwise hours since the person's
+first check-in) is used in two ways:
 
-- as a benchmark: typing alone is compared with hours awake alone, under the same
+- as a benchmark: typing alone is compared with the clock alone, under the same
   leave-one-person-out split;
 - as a clock check: practice, tiredness and the clock all drift together over one night, so a
-  permutation test shuffles the typing features within each person, keeping the ratings and hours
-  awake in place, and asks whether typing adds information beyond the clock.
+  permutation test shuffles the typing features within each person, keeping the ratings and the
+  clock in place, and asks whether typing adds information beyond the clock.
 
 The original test from the plan (shuffling ratings within each person) is kept for comparison,
 because typing that only drifts with practice can fool it.
@@ -34,18 +35,18 @@ ALPHAS = np.logspace(-2, 3, 30)
 # The 6 typing features picked on 7 Nov, before any real results (free-text thinking pauses were
 # dropped because the app has no free-text task); no feature selection happens on
 # the data. They are columns of features_processed.csv: changes from each person's first two
-# check-ins (_dev), and backspaces per 100 keys as they are.
-TYPING = ["vt_rule_cost_dev", "backspace_per100", "vt_accuracy_dev", "vt_gap_cv_dev",
+# check-ins (_dev), and backspaces per 100 keys adjusted for the rule type.
+TYPING = ["vt_rule_cost_dev", "backspace_per100_adj", "vt_accuracy_dev", "vt_gap_cv_dev",
           "vt_pause1s_share_dev", "vt_hold_med_dev"]
 RULE = ["vt_rule_cost_dev"]
-RT = ["rt_lapse_rate_dev"]  # the reaction test, for one comparison row
-CLOCK = ["hours_rel"]  # hours awake relative to the baseline check-ins: a benchmark, never a prediction input
-EXTERNAL = ["vt_rule_cost", "vt_gap_cv", "vt_accuracy", "backspace_per100"]  # need no baseline
+RT = ["rt_speed_dev"]  # the reaction test, for one comparison row; 20 s gives too few lapses to count
+CLOCK = ["hours_rel"]  # the clock relative to the baseline check-ins: a benchmark, never a prediction input
+EXTERNAL = ["vt_rule_cost_adj", "vt_gap_cv_adj", "vt_accuracy_adj", "backspace_per100_adj"]  # need no baseline
 MAIN = "Typing only (main)"
 MIN_PEOPLE, MIN_CHECKINS, MIN_PER_PERSON = 3, 15, 3
 MIXED = {
-    "Tiredness": "kss ~ hours_awake + log_checkin + vt_gap_cv_dev + vt_rule_cost_dev",
-    "Rule cost": "vt_rule_cost ~ hours_awake + log_checkin",
+    "Tiredness": "kss ~ hours_clock + log_checkin + vt_gap_cv_dev + vt_rule_cost_dev",
+    "Rule cost": "vt_rule_cost_adj ~ hours_clock + log_checkin",
 }
 
 
@@ -122,12 +123,12 @@ def compare_models(d: pd.DataFrame, typing: list[str], rt: list[str]) -> tuple[p
     preds = {
         "Training mean": predict(d, [], anchored=False),
         "Own baseline rating": np.clip(d.kss_base.to_numpy(float), 1, 9),
-        "Hours awake (benchmark)": predict(d, CLOCK),
+        "Clock (benchmark)": predict(d, CLOCK),
         MAIN: predict(d, typing),
         "Typing + reaction test": predict(d, typing + rt),
         "Typing without rule cost": predict(d, no_rule),
         "Typing, not anchored": predict(d, typing, anchored=False),
-        "Typing + hours awake (check only)": predict(d, CLOCK + typing),
+        "Typing + clock (check only)": predict(d, CLOCK + typing),
     }
     table = pd.DataFrame({name: metrics(d, p) for name, p in preds.items()}).T
     return table, pd.DataFrame(preds, index=d.index)
@@ -283,6 +284,7 @@ def run_models(f: pd.DataFrame, n_perm: int = 500, seed: int = 0) -> dict:
     r["original"] = original_test(d, r["typing"], n_perm, seed)
     r["auc"], r["tired_prob"] = classify(d, r["typing"])
     r["auc_clock"], _ = classify(d, CLOCK)
+    r["clock_basis"] = d.clock_basis.mode().iloc[0] if "clock_basis" in d and len(d) else "hours awake"
     return r
 
 

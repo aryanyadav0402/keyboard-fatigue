@@ -5,12 +5,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from features import add_hours_awake, build_features, hours_awake, processed_table, raw_table, typing_features
+from features import (add_clock, add_hours_awake, build_features, hours_awake, processed_table, pvt_features,
+                      raw_table, typing_features)
 from load_data import load_sessions, pair_presses
 from model import run_models
 from report import write_outputs
 from simulate import make_people, make_schedule, make_session, make_states
-from tasks import POOL, capitalise_vowels, score, sentence_ok
+from tasks import POOL, apply_rule, capitalise_vowels, score, sentence_ok
 
 
 def presses(rows):
@@ -128,7 +129,56 @@ def test_processed_file_measures_change_from_first_two_checkins(few_sessions):
     processed = processed_table(f)
     assert processed.is_baseline.tolist() == [True, True, False]
     assert processed.vt_wpm_dev.iloc[:2].mean() == pytest.approx(0)
-    assert processed.vt_wpm_dev.iloc[2] == pytest.approx(f.vt_wpm.iloc[2] - f.vt_wpm.iloc[:2].mean())
+    # the change is measured on the rule-adjusted version, because each visit shows a different rule
+    assert processed.vt_wpm_dev.iloc[2] == pytest.approx(f.vt_wpm_adj.iloc[2] - f.vt_wpm_adj.iloc[:2].mean())
     assert processed.kss_delta.iloc[2] == pytest.approx(f.kss.iloc[2] - f.kss.iloc[:2].mean())
-    assert "backspace_per100" in processed and "backspace_per100_dev" not in processed
-    assert not any(c.endswith("_dev") for c in raw_table(f))
+    assert "backspace_per100_adj" in processed and "backspace_per100_dev" not in processed
+    assert not any(c.endswith(("_dev", "_adj")) for c in raw_table(f))
+
+
+@pytest.mark.parametrize("rule_type, source, expected", [
+    ("dashes_for_spaces", "a sleepy panda shared a sweet red apple with a tiny duck",
+     "a-sleepy-panda-shared-a-sweet-red-apple-with-a-tiny-duck"),
+    ("dots_and_vowels", "the baby otter floated down the calm blue river", "thE.bAby.OttEr.flOAtEd.dOwn.thE.cAlm.blUE.rIvEr"),
+    ("dashes_and_vowels", "the polite pig invited the hedgehog to tea", "thE-pOlItE-pIg-InvItEd-thE-hEdgEhOg-tO-tEA"),
+    # the team's hand-written answer had "O F" here; the rule gives "OF"
+    ("capitalize_first_and_last", "the clumsy bear dropped his favorite jar of honey",
+     "ThE ClumsY BeaR DroppeD HiS FavoritE JaR OF HoneY"),
+])
+def test_rules_match_the_apps_examples(rule_type, source, expected):
+    assert apply_rule(rule_type, source) == expected
+
+
+def test_rule_cost_works_for_dashes():
+    rows = [("a", 0, 50), ("b", 100, 150), ("-", 300, 350), ("c", 500, 550), ("d", 600, 650), ("-", 800, 850),
+            ("e", 1000, 1050), ("f", 1100, 1150)]
+    f = typing_features(presses(rows), "ab-cd-ef", "ab-cd-ef", source="ab cd ef", rule=True)
+    assert f["ord_gap_med"] == 100 and f["touch_gap_med"] == 200
+    assert f["rule_cost"] == pytest.approx(2.0)
+
+
+def test_a_20_second_reaction_test_still_counts():
+    trials = pd.DataFrame({"phase": "main", "rt_ms": [250, 270, 300, 380, 260, 290, 310],
+                           "outcome": ["valid", "valid", "valid", "lapse", "valid", "valid", "valid"]})
+    out = pvt_features(trials, lapse_ms=355, false_start_ms=100, timeout_ms=10000)
+    assert out["rt_trials"] == 7 and out["rt_median"] == 290
+    assert out["rt_lapse_rate"] == pytest.approx(1 / 7)
+
+
+def test_in_progress_checkpoints_and_duplicate_copies_are_skipped(few_sessions):
+    final = json.loads(next(few_sessions.glob("*.json")).read_text())
+    (few_sessions / "partial").mkdir()
+    (few_sessions / "partial" / "copy.json").write_text(json.dumps(dict(final, status="in_progress", keys=[])))
+    (few_sessions / "downloaded_copy.json").write_text(json.dumps(final))
+    tables = load_sessions(few_sessions)
+    assert len(tables.sessions) == 3 and tables.skipped_partial == 1
+    assert (tables.sessions.status == "final").all()
+
+
+def test_clock_falls_back_to_hours_since_first_checkin():
+    f = pd.DataFrame({"person": ["P"] * 3,
+                      "timestamp": pd.to_datetime(["2026-11-07 14:00", "2026-11-07 15:30", "2026-11-07 18:00"]),
+                      "hours_awake": [np.nan] * 3})
+    out = add_clock(f)
+    assert out.hours_clock.tolist() == pytest.approx([0, 1.5, 4.0])
+    assert (out.clock_basis == "hours since first check-in").all()
