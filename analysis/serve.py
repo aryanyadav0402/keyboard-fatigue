@@ -31,7 +31,7 @@ import pandas as pd
 
 from demo import BadSession, clean, get_best, score_session
 from features import build_features
-from load_data import Tables, empty_tables, load_sessions, normalise_name
+from load_data import Tables, empty_tables, folder_problem, load_sessions, normalise_name
 from model import NAP_AT, PUSH_WARNING_AT, add_flags, all_predictions, missing_data, scored
 
 POLL_SECONDS = 5
@@ -54,7 +54,7 @@ def build_payloads(folder: str | Path, tables: Tables | None = None) -> dict:
               "skipped_test_runs": tables.skipped_test_runs, "skipped_in_progress": tables.skipped_partial,
               "problems": tables.problems[:20]}
     if f.empty:
-        status.update(people=0, panel_people=0, one_off_people=0, models_ready=False, missing=["no check-ins yet"])
+        status.update(people=0, panel_people=0, one_off_people=0, models_ready=False, missing=[folder_problem(folder) or "no check-ins yet"])
         return {"status": status, "latest": {"updated_at": now, **thresholds, "people": []},
                 "history": {"updated_at": now, "checkins": []}}
     preds = all_predictions(f).sort_values("timestamp").reset_index(drop=True)
@@ -211,6 +211,9 @@ def main() -> None:
         feed.refresh_if_changed()
     except Exception as err:
         print(f"First update failed ({type(err).__name__}: {err}); will retry when the folder changes.")
+    problem = folder_problem(args.data)
+    if problem:
+        print(f"Warning: {problem}. Point --data at the folder that holds the check-in files.", flush=True)
     threading.Thread(target=feed.run_forever, daemon=True).start()
     server = ThreadingHTTPServer((args.host, args.port), make_handler(feed, args.db))
     shown = "localhost" if args.host in ("127.0.0.1", "localhost") else args.host

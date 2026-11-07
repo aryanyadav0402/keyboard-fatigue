@@ -7,7 +7,7 @@ import argparse
 import time
 
 from features import build_features
-from load_data import load_sessions
+from load_data import folder_problem, load_sessions
 from model import MAIN, run_models
 from report import write_outputs
 
@@ -23,6 +23,9 @@ def main() -> None:
     start = time.time()
     tables = load_sessions(args.data)
     print(f"Loaded {len(tables.sessions)} check-ins ({tables.skipped_test_runs} test runs skipped)")
+    problem = folder_problem(args.data)
+    if problem:
+        print(f"  Warning: {problem}. Point --data at the folder that holds the check-in files.")
     for problem in tables.problems:
         print("  problem:", problem)
     features = build_features(tables)
