@@ -172,6 +172,8 @@ def load_sessions(folder: str | Path) -> Tables:
     best, problems = {}, []
     skipped_tests = skipped_partial = 0
     for path in sorted(Path(folder).rglob("*.json")):
+        if path.name.startswith("._") or "__MACOSX" in path.parts:
+            continue  # leftovers from zips made on a Mac, not check-ins
         try:
             s = read_session(path)
         except (ValueError, KeyError, TypeError, json.JSONDecodeError) as err:

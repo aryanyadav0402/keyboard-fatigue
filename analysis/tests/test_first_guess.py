@@ -112,3 +112,15 @@ def test_demo_reply_includes_the_fatigue_index(night, tmp_path):
     json.dumps(first, allow_nan=False)
     again = score_session(demo_body(night, "a judge"), train, db)  # compared with their best now
     assert again["model"] == "best-attempt model" and again["fatigue_index"] is None  # only themselves
+
+
+def test_mac_zip_leftovers_are_ignored(night, tmp_path):
+    import shutil
+    folder = tmp_path / "unzipped"
+    shutil.copytree(night, folder / "train_data")
+    (folder / "__MACOSX" / "train_data").mkdir(parents=True)
+    for p in (folder / "train_data").glob("*.json"):  # what unzip leaves next to Mac-made zips
+        (folder / "__MACOSX" / "train_data" / f"._{p.name}").write_bytes(b"\x00\x05\x16\x07Mac OS X        \x00\x02")
+        (folder / "train_data" / f"._{p.name}").write_bytes(b"\x00\x05\x16\x07")
+    tables = load_sessions(folder)
+    assert len(tables.sessions) == len(list(night.glob("*.json"))) and not tables.problems

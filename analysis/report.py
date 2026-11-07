@@ -78,6 +78,8 @@ def make_figures(f: pd.DataFrame, r: dict, folder: Path) -> dict:
     for ax, person in zip(axes.flat, people):
         g = panel[panel.person == person]
         ax.plot(g.timestamp, g.kss, "o", color="#333333", ms=4, label="rated")
+        if g.timestamp.nunique() < 2:  # one check-in: show a couple of hours, not matplotlib's default of years
+            ax.set_xlim(g.timestamp.min() - pd.Timedelta(hours=1), g.timestamp.min() + pd.Timedelta(hours=1))
         g = g[g.checkin_id.isin(pred.keys())]
         if len(g):
             ax.plot(g.timestamp, g.checkin_id.map(pred), "-", color="#d1495b", label="predicted")
