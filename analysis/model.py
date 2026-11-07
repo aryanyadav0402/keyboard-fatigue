@@ -31,11 +31,12 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
 ALPHAS = np.logspace(-2, 3, 30)
-# The 7 typing features picked on 7 Nov, before any real results; no feature selection happens on
+# The 6 typing features picked on 7 Nov, before any real results (free-text thinking pauses were
+# dropped because the app has no free-text task); no feature selection happens on
 # the data. They are columns of features_processed.csv: changes from each person's first two
 # check-ins (_dev), and backspaces per 100 keys as they are.
 TYPING = ["vt_rule_cost_dev", "backspace_per100", "vt_accuracy_dev", "vt_gap_cv_dev",
-          "vt_pause1s_share_dev", "vt_hold_med_dev", "ft_pause2s_share_dev"]
+          "vt_pause1s_share_dev", "vt_hold_med_dev"]
 RULE = ["vt_rule_cost_dev"]
 RT = ["rt_lapse_rate_dev"]  # the reaction test, for one comparison row
 CLOCK = ["hours_rel"]  # hours awake relative to the baseline check-ins: a benchmark, never a prediction input

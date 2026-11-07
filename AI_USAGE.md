@@ -17,7 +17,7 @@ Keep this current while building, and copy it into the submission. The event's C
 | Simulated check-ins in the app's file format, with and without a fatigue effect (`analysis/simulate.py`) | Claude Code | all of it | not reviewed yet |
 | Models, evaluation, report, figures and latest predictions (`analysis/model.py`, `report.py`, `run_all.py`, `predict_latest.py`), tests, and the simulated results | Claude Code | all of it | not reviewed yet |
 | Raw and processed feature files measured from each person's first two check-ins (`analysis/export_features.py`, with changes to `features.py`, `model.py` and `report.py`) | Claude Code | all of it | not reviewed yet |
-| Typing-only predictions from 7 chosen features, with hours awake as a benchmark (changes to `analysis/model.py`, `report.py`, `run_all.py`) | Claude Code | all of it | not reviewed yet |
+| Typing-only predictions from 6 chosen features, with hours awake as a benchmark (changes to `analysis/model.py`, `report.py`, `run_all.py`) | Claude Code | all of it | not reviewed yet |
 
 ## What we wrote or decided ourselves
 

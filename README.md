@@ -8,8 +8,7 @@ People on our overnight panel do a check-in every hour or so while they're awake
 
 1. A self-report, including sleepiness on the Karolinska Sleepiness Scale (KSS: 1 is extremely alert, 9 is fighting sleep) and when they last woke up.
 2. A sentence to type with every vowel (a, e, i, o, u, not y) capitalised, using Shift.
-3. A short free-text answer.
-4. A 3-minute reaction-time test.
+3. A 3-minute reaction-time test.
 
 The vowel rule adds mental load. Within the same sentence, we compare the gaps next to a capital with the gaps between ordinary letters. That cancels out each person's own typing speed, and we expect tired people to pay more for the rule.
 
@@ -49,8 +48,8 @@ The simulator writes check-ins in the app's format for two worlds: one where fat
 
 ## What the analysis does
 
-- **Features:** typing speed, rhythm, pauses, key hold times, errors, the vowel rule's cost and Shift timing, free-text pauses, and the reaction test's median, speed and lapses. Timings leave out Shift presses and corrections. `features_raw.csv` has each feature as measured. `features_processed.csv` has each one as a change from the person's first two check-ins, with backspaces per 100 keys left as they are, and the models use its columns.
-- **Models:** ridge regression predicts each person's change in KSS from their own first two check-ins, using 7 typing features: the vowel rule's cost, backspaces, accuracy, rhythm unevenness, long pauses, key hold time and free-text thinking pauses. Predictions use typing only, because the demo can't ask how long someone has been awake. Every person is predicted by a model trained on everyone else, and a logistic regression separates tired check-ins from alert ones.
+- **Features:** typing speed, rhythm, pauses, key hold times, errors, the vowel rule's cost and Shift timing, and the reaction test's median, speed and lapses. Timings leave out Shift presses and corrections. `features_raw.csv` has each feature as measured. `features_processed.csv` has each one as a change from the person's first two check-ins, with backspaces per 100 keys left as they are, and the models use its columns.
+- **Models:** ridge regression predicts each person's change in KSS from their own first two check-ins, using 6 typing features: the vowel rule's cost, backspaces, accuracy, rhythm unevenness, long pauses and key hold time. Predictions use typing only, because the demo can't ask how long someone has been awake. Every person is predicted by a model trained on everyone else, and a logistic regression separates tired check-ins from alert ones.
 - **Hours awake as a benchmark:** we compare typing alone with hours awake alone. Over one night, practice, tiredness and the clock all drift together, so a clock check also tests whether typing adds anything to hours awake, by shuffling the typing features within each person.
 
 | File | What it does |
