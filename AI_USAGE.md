@@ -13,6 +13,7 @@ Keep this current while building, and copy it into the submission. The event's C
 |---|---|---|---|
 | README and repo setup | Claude Code | all of it | not reviewed yet |
 | Sentence pool, vowel rule and answer scoring (`analysis/tasks.py`, `items.json`) | Claude Code | all of it | not reviewed yet |
+| Reading the check-in app's session files and computing typing, reaction-time and context features (`analysis/load_data.py`, `analysis/features.py`) | Claude Code | all of it | not reviewed yet |
 
 ## What we wrote or decided ourselves
 
