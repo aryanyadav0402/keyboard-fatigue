@@ -30,7 +30,7 @@ Put the check-in app's session files (one JSON file per check-in) in `data/sessi
 uv run python run_all.py --data ../data/sessions --out results/latest
 ```
 
-That writes `report.md`, figures, `predictions.csv` and `features.csv` to `results/latest/` in under a minute. To print each person's latest predicted tiredness, run `predict_latest.py`; add `--json` for the dashboard, sleep rota and push guard:
+That writes `report.md`, figures, `predictions.csv`, `features_raw.csv` and `features_processed.csv` to `results/latest/` in under a minute. To print each person's latest predicted tiredness, run `predict_latest.py`; add `--json` for the dashboard, sleep rota and push guard:
 
 ```bash
 uv run python predict_latest.py --data ../data/sessions
@@ -49,7 +49,7 @@ The simulator writes check-ins in the app's format for two worlds: one where fat
 
 ## What the analysis does
 
-- **Features:** typing speed, rhythm, pauses, key hold times, errors, the vowel rule's cost and Shift timing, free-text pauses, and the reaction test's median, speed and lapses. Timings leave out Shift presses and corrections. Each feature is also measured relative to the person's first two check-ins.
+- **Features:** typing speed, rhythm, pauses, key hold times, errors, the vowel rule's cost and Shift timing, free-text pauses, and the reaction test's median, speed and lapses. Timings leave out Shift presses and corrections. `features_raw.csv` has each feature as measured. `features_processed.csv` has each one as a change from the person's first two check-ins, with backspaces per 100 keys left as they are, and the models use its columns.
 - **Models:** ridge regression predicts each person's change in KSS from their own first two check-ins. Every person is predicted by a model trained on everyone else. A logistic regression separates tired check-ins from alert ones.
 - **The key test:** over one night, practice, tiredness and the clock all drift together, so we test whether typing adds anything to hours awake. The null comes from shuffling the typing features within each person.
 
@@ -58,6 +58,7 @@ The simulator writes check-ins in the app's format for two worlds: one where fat
 | `tasks.py` | 40 checked sentences, the vowel rule and answer scoring; writes `items.json` |
 | `load_data.py` | Reads the app's session files |
 | `features.py` | One row of features per check-in |
+| `export_features.py` | Writes just the raw and processed feature files |
 | `model.py` | Models and their evaluation |
 | `report.py` | The report, figures and predictions |
 | `run_all.py`, `predict_latest.py`, `simulate.py` | The commands above |

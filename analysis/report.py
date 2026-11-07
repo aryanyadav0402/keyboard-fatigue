@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
+from features import processed_table, raw_table  # noqa: E402
 from load_data import Tables  # noqa: E402
 from model import MAIN  # noqa: E402
 
@@ -280,8 +281,8 @@ def report_text(tables: Tables, f: pd.DataFrame, r: dict, figures: dict, data_di
               f"- Typing features in the models: {', '.join(r['typing']) or 'none yet'}.",
               f"- Fixed features with no data here: {', '.join(r['inactive']) or 'none'}.",
               f"- Reaction-test features: {', '.join(r['rt']) or 'none yet'}.",
-              "- `_z` features are each person's change from their first two check-ins, divided by the baseline "
-              "spread pooled across the panel. Hours awake reset after a sleep of an hour or more.",
+              "- `_dev` features are each person's change from the average of their first two check-ins. "
+              "Backspaces per 100 keys are used as they are. Hours awake reset after a sleep of an hour or more.",
               "- Lapses are reaction times of 355 ms or more, the cut-off for the 3-minute test.", ""]
     return "\n".join(lines)
 
@@ -289,8 +290,11 @@ def report_text(tables: Tables, f: pd.DataFrame, r: dict, figures: dict, data_di
 def write_outputs(tables: Tables, f: pd.DataFrame, r: dict, out: str | Path, data_dir: str) -> Path:
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
-    f.to_csv(out / "features.csv", index=False)
-    predictions_table(f, r).to_csv(out / "predictions.csv", index=False) if len(f) else None
-    figures = make_figures(f, r, out / "figures") if len(f) else {}
+    figures = {}
+    if len(f):
+        raw_table(f).to_csv(out / "features_raw.csv", index=False)
+        processed_table(f).to_csv(out / "features_processed.csv", index=False)
+        predictions_table(f, r).to_csv(out / "predictions.csv", index=False)
+        figures = make_figures(f, r, out / "figures")
     (out / "report.md").write_text(report_text(tables, f, r, figures, data_dir))
     return out / "report.md"

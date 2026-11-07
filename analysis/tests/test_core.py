@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from features import add_hours_awake, build_features, hours_awake, typing_features
+from features import add_hours_awake, build_features, hours_awake, processed_table, raw_table, typing_features
 from load_data import load_sessions, pair_presses
 from model import run_models
 from report import write_outputs
@@ -121,3 +121,14 @@ def test_partial_data_skips_models_without_crashing(few_sessions, tmp_path):
     assert r["missing"]  # one person isn't enough
     report = write_outputs(tables, f, r, tmp_path / "out", str(few_sessions))
     assert "Not enough data" in report.read_text()
+
+
+def test_processed_file_measures_change_from_first_two_checkins(few_sessions):
+    f = build_features(load_sessions(few_sessions))
+    processed = processed_table(f)
+    assert processed.is_baseline.tolist() == [True, True, False]
+    assert processed.vt_wpm_dev.iloc[:2].mean() == pytest.approx(0)
+    assert processed.vt_wpm_dev.iloc[2] == pytest.approx(f.vt_wpm.iloc[2] - f.vt_wpm.iloc[:2].mean())
+    assert processed.kss_delta.iloc[2] == pytest.approx(f.kss.iloc[2] - f.kss.iloc[:2].mean())
+    assert "backspace_per100" in processed and "backspace_per100_dev" not in processed
+    assert not any(c.endswith("_dev") for c in raw_table(f))

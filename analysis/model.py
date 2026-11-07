@@ -28,18 +28,20 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
 ALPHAS = np.logspace(-2, 3, 30)
-# Fixed before seeing any real data. No feature selection happens on the data.
-TYPING = ["vt_rule_cost_z", "vt_shift_lead_med_z", "vt_wpm_z", "vt_gap_cv_z", "vt_hold_med_z",
-          "vt_pause1s_share_z", "vt_accuracy_z", "backspace_per100_z", "ft_word_gap_med_z", "ft_pause2s_share_z"]
-PLAIN_LOAD_COST = ["wpm_ratio_z", "gap_ratio_z", "cv_ratio_z", "acc_diff_z"]  # only once there's a plain copy task
-RULE = ["vt_rule_cost_z", "vt_shift_lead_med_z", *PLAIN_LOAD_COST]
-RT = ["rt_speed_z", "rt_lapse_rate_z"]
+# Fixed before seeing any real data. No feature selection happens on the data. These are the
+# columns of features_processed.csv: changes from each person's first two check-ins (_dev), and
+# backspaces per 100 keys as they are.
+TYPING = ["vt_rule_cost_dev", "vt_shift_lead_med_dev", "vt_wpm_dev", "vt_gap_cv_dev", "vt_hold_med_dev",
+          "vt_pause1s_share_dev", "vt_accuracy_dev", "backspace_per100", "ft_word_gap_med_dev", "ft_pause2s_share_dev"]
+PLAIN_LOAD_COST = ["wpm_ratio_dev", "gap_ratio_dev", "cv_ratio_dev", "acc_diff_dev"]  # once there's a plain copy task
+RULE = ["vt_rule_cost_dev", "vt_shift_lead_med_dev", *PLAIN_LOAD_COST]
+RT = ["rt_speed_dev", "rt_lapse_rate_dev"]
 CLOCK = ["hours_rel"]  # hours awake relative to the person's baseline check-ins
 EXTERNAL = ["vt_rule_cost", "vt_gap_cv", "vt_accuracy", "backspace_per100"]  # need no baseline
 MAIN = "Hours awake + typing (main)"
 MIN_PEOPLE, MIN_CHECKINS, MIN_PER_PERSON = 3, 15, 3
 MIXED = {
-    "Tiredness": "kss ~ hours_awake + log_checkin + vt_gap_cv_z + vt_rule_cost_z",
+    "Tiredness": "kss ~ hours_awake + log_checkin + vt_gap_cv_dev + vt_rule_cost_dev",
     "Rule cost": "vt_rule_cost ~ hours_awake + log_checkin",
 }
 

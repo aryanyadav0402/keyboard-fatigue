@@ -5,9 +5,9 @@ rhythm, and gaps next to a correction (Backspace or a wrong key) are left out. I
 "ordinary" gaps are between two lowercase letters or spaces, and the rule cost is the median gap
 next to a capital divided by the median ordinary gap.
 
-Person-relative versions (suffix _z) subtract the person's mean over their first two check-ins
-(their baseline) and divide by the baseline spread pooled across the panel. kss_delta and
-hours_rel are the same idea, without the division.
+Processed versions (suffix _dev) subtract the person's average over their first two check-ins
+(their baseline), so they read as "change from your own normal". kss_delta and hours_rel do the
+same for the rating and hours awake. Backspaces per 100 keys are used as they are.
 """
 
 import math
@@ -23,13 +23,13 @@ PREFIX = {"rule": "vt_", "plain": "pt_", "free": "ft_"}
 BASELINE_CHECKINS = 2
 SLEEP_RESET_MIN = 60  # sleeping at least this long since the last check-in resets hours awake
 
-# Features that get a person-relative (_z) version, when present.
+# Features that get a change-from-baseline (_dev) version, when present.
 RELATIVE = [
     "vt_wpm", "vt_start_latency", "vt_gap_med", "vt_gap_cv", "vt_pause500_share", "vt_pause1s_share",
     "vt_hold_med", "vt_hold_iqr", "vt_rollover_share", "vt_accuracy", "vt_rule_cost", "vt_shift_lead_med",
     "pt_wpm", "pt_gap_med", "pt_gap_cv", "pt_pause1s_share", "pt_hold_med", "pt_accuracy",
     "ft_word_gap_med", "ft_pause1s_share", "ft_pause2s_share", "ft_longest_gap",
-    "backspace_per100", "wpm_ratio", "gap_ratio", "cv_ratio", "acc_diff",
+    "wpm_ratio", "gap_ratio", "cv_ratio", "acc_diff",
     "rt_median", "rt_speed", "rt_lapse_rate", "rt_slowest10", "rt_false_starts",
 ]
 
@@ -203,31 +203,45 @@ def add_hours_awake(f: pd.DataFrame) -> pd.Series:
 
 
 def add_relative(f: pd.DataFrame) -> pd.DataFrame:
-    """Mark each panel person's first two usable check-ins as baseline and add _z features."""
+    """Mark each panel person's first two usable check-ins as their baseline, and add _dev
+    features: each feature minus that person's average over those two check-ins."""
     panel = f.participant_type.eq("panel")
     typing_cols = [c for c in ("vt_wpm", "pt_wpm", "ft_n_keys") if c in f]
     has_typing = f[typing_cols].notna().any(axis=1) if typing_cols else pd.Series(False, index=f.index)
     usable = panel & f.kss.notna() & has_typing
     base_idx = f[usable].groupby("person").head(BASELINE_CHECKINS).index
     f["is_baseline"] = f.index.isin(base_idx)
-    base = f.loc[base_idx]
+    baseline = f.loc[base_idx].groupby("person")
     new = {}
     for col in [c for c in RELATIVE if c in f] + ["kss", "hours_awake"]:
-        rel = f[col] - f.person.map(base.groupby("person")[col].mean())
+        normal = f.person.map(baseline[col].mean()).where(panel)
         if col == "kss":
-            new["kss_base"] = f.person.map(base.groupby("person")[col].mean())
-            new["kss_delta"] = rel
-            continue
-        if col == "hours_awake":
-            new["hours_rel"] = rel
-            continue
-        sd = math.sqrt(base.groupby("person")[col].var().mean())  # pooled within-person spread
-        if not np.isfinite(sd) or sd < 1e-9:
-            sd = f.loc[panel, col].std()
-        if not np.isfinite(sd) or sd < 1e-9:
-            sd = 1.0
-        new[col + "_z"] = (rel / sd).where(panel)
+            new["kss_base"], new["kss_delta"] = normal, f[col] - normal
+        elif col == "hours_awake":
+            new["hours_rel"] = f[col] - normal
+        else:
+            new[col + "_dev"] = f[col] - normal
     return pd.concat([f, pd.DataFrame(new, index=f.index)], axis=1)
+
+
+ID_COLUMNS = ["checkin_id", "person", "participant_type", "timestamp", "checkin_n", "is_baseline",
+              "hours_awake", "nap_since_last_min", "kss"]
+COMBINED = ["backspace_per100", "wpm_ratio", "gap_ratio", "cv_ratio", "acc_diff"]
+
+
+def raw_table(f: pd.DataFrame) -> pd.DataFrame:
+    """One row per check-in: who, when, the rating, and every feature as measured."""
+    measured = [c for c in f if c.startswith(tuple(PREFIX.values()) + ("rt_",)) and not c.endswith("_dev")]
+    return f[[c for c in ID_COLUMNS if c in f] + measured + [c for c in COMBINED if c in f]]
+
+
+def processed_table(f: pd.DataFrame) -> pd.DataFrame:
+    """What the models use: each feature's change from the person's first two check-ins (_dev),
+    backspaces per 100 keys as they are, and the rating and hours awake relative to baseline."""
+    relative = [c for c in ("kss_base", "kss_delta", "hours_rel") if c in f]
+    changes = [c for c in f if c.endswith("_dev")]
+    as_is = ["backspace_per100"] if "backspace_per100" in f else []
+    return f[[c for c in ID_COLUMNS if c in f] + relative + changes + as_is]
 
 
 def build_features(t: Tables) -> pd.DataFrame:

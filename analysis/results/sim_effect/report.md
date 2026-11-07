@@ -1,6 +1,6 @@
 # Tiredness from typing: results
 
-Data from `../data/sim/effect`, analysed Sat 07 Nov 17:32. 122 check-ins: 95 from 7 panel people and 27 from 20 one-off people. 81 panel check-ins are scored; each person's first 2 are their baseline.
+Data from `../data/sim/effect`, analysed Sat 07 Nov 18:09. 122 check-ins: 95 from 7 panel people and 27 from 20 one-off people. 81 panel check-ins are scored; each person's first 2 are their baseline.
 
 - 3 vowel task timings dropped because the page lost focus.
 - 4 free text timings dropped because the page lost focus.
@@ -8,7 +8,7 @@ Data from `../data/sim/effect`, analysed Sat 07 Nov 17:32. 122 check-ins: 95 fro
 
 ## Findings
 
-- Typing adds to hours awake: adding the typing features cut the average error from 1.40 to 1.09 KSS points (shuffle test p = 0.002).
+- Typing adds to hours awake: adding the typing features cut the average error from 1.40 to 1.12 KSS points (shuffle test p = 0.002).
 - The original test, which shuffles ratings within each person, gives p = 0.002.
 - After allowing for practice, the rule cost changed by 0.005 per hour awake (95% CI -0.004 to 0.014), which isn't clearly different from zero.
 - Gaps next to a capital took 1.53× as long as ordinary gaps (Wilcoxon p < 0.001, 119 check-ins), so the vowel rule does cost time.
@@ -24,15 +24,15 @@ Each person is predicted by a model trained on everyone else. Anchored models pr
 | Training mean | 1.93 | – | – |
 | Own baseline rating | 3.15 | – | – |
 | Hours awake | 1.40 | 0.60 | 0.88 |
-| Typing only | 1.11 | 0.75 | 0.79 |
-| Hours awake + typing (main) | 1.09 | 0.76 | 0.84 |
-| Hours awake + typing + reaction test | 0.87 | 0.83 | 0.79 |
-| Hours awake + typing, no rule cost | 1.06 | 0.76 | 0.84 |
-| Hours awake + typing, not anchored | 1.11 | 0.79 | 0.82 |
+| Typing only | 1.14 | 0.73 | 0.75 |
+| Hours awake + typing (main) | 1.12 | 0.73 | 0.81 |
+| Hours awake + typing + reaction test | 0.88 | 0.83 | 0.79 |
+| Hours awake + typing, no rule cost | 1.09 | 0.74 | 0.85 |
+| Hours awake + typing, not anchored | 1.11 | 0.78 | 0.82 |
 
-**Main test.** Adding typing to hours awake changes the error from 1.40 to 1.09 KSS points. Shuffling the typing features within each person 500 times gives p = 0.002.
+**Main test.** Adding typing to hours awake changes the error from 1.40 to 1.12 KSS points. Shuffling the typing features within each person 500 times gives p = 0.002.
 
-**Original test.** Shuffling ratings within each person, as in the plan, gives a typing-only error of 1.23 and p = 0.002. This test can't tell typing apart from anything else that drifts over the night.
+**Original test.** Shuffling ratings within each person, as in the plan, gives a typing-only error of 1.22 and p = 0.002. This test can't tell typing apart from anything else that drifts over the night.
 
 **Tired vs alert** (above each person's median KSS or not): AUC 0.74 with hours awake and typing, 0.79 with hours awake alone.
 
@@ -44,7 +44,7 @@ Each person is predicted by a model trained on everyone else. Anchored models pr
 
 ### Tiredness
 
-`kss ~ hours_awake + log_checkin + vt_gap_cv_z + vt_rule_cost_z`, random intercept per person.
+`kss ~ hours_awake + log_checkin + vt_gap_cv_dev + vt_rule_cost_dev`, random intercept per person.
 
 93 check-ins from 7 people.
 
@@ -53,8 +53,8 @@ Each person is predicted by a model trained on everyone else. Anchored models pr
 | Intercept | 1.384 | 0.540 to 2.228 | 0.001 |
 | hours_awake | 0.222 | 0.160 to 0.284 | < 0.001 |
 | log_checkin | 0.914 | 0.484 to 1.344 | < 0.001 |
-| vt_gap_cv_z | 0.100 | -0.056 to 0.255 | 0.210 |
-| vt_rule_cost_z | 0.112 | -0.040 to 0.264 | 0.149 |
+| vt_gap_cv_dev | 1.017 | -0.572 to 2.607 | 0.210 |
+| vt_rule_cost_dev | 0.979 | -0.351 to 2.310 | 0.149 |
 
 ### Rule cost
 
@@ -92,8 +92,8 @@ A model trained on all panel check-ins, using only features that need no baselin
 
 ## Notes
 
-- Typing features in the models: vt_rule_cost_z, vt_shift_lead_med_z, vt_wpm_z, vt_gap_cv_z, vt_hold_med_z, vt_pause1s_share_z, vt_accuracy_z, backspace_per100_z, ft_word_gap_med_z, ft_pause2s_share_z.
-- Fixed features with no data here: wpm_ratio_z, gap_ratio_z, cv_ratio_z, acc_diff_z.
-- Reaction-test features: rt_speed_z, rt_lapse_rate_z.
-- `_z` features are each person's change from their first two check-ins, divided by the baseline spread pooled across the panel. Hours awake reset after a sleep of an hour or more.
+- Typing features in the models: vt_rule_cost_dev, vt_shift_lead_med_dev, vt_wpm_dev, vt_gap_cv_dev, vt_hold_med_dev, vt_pause1s_share_dev, vt_accuracy_dev, backspace_per100, ft_word_gap_med_dev, ft_pause2s_share_dev.
+- Fixed features with no data here: wpm_ratio_dev, gap_ratio_dev, cv_ratio_dev, acc_diff_dev.
+- Reaction-test features: rt_speed_dev, rt_lapse_rate_dev.
+- `_dev` features are each person's change from the average of their first two check-ins. Backspaces per 100 keys are used as they are. Hours awake reset after a sleep of an hour or more.
 - Lapses are reaction times of 355 ms or more, the cut-off for the 3-minute test.
