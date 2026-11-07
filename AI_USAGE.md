@@ -19,6 +19,7 @@ Keep this current while building, and copy it into the submission. The event's C
 | Raw and processed feature files measured from each person's first two check-ins (`analysis/export_features.py`, with changes to `features.py`, `model.py` and `report.py`) | Claude Code | all of it | not reviewed yet |
 | Typing-only predictions from 6 chosen features, with hours awake as a benchmark (changes to `analysis/model.py`, `report.py`, `run_all.py`) | Claude Code | all of it | not reviewed yet |
 | Support for the check-in app's version 1.2 files: five rotating rules scored by their own rule, rule-type adjustment, 20-second reaction tests, a clock without wake-up times, skipped checkpoints; the simulator now writes this format (changes across `analysis/`) | Claude Code | all of it | not reviewed yet |
+| Live prediction service for the dashboard: watches the check-in folder and serves JSON (`analysis/serve.py`, with shared prediction code in `model.py` and `predict_latest.py`) | Claude Code | all of it | not reviewed yet |
 
 ## What we wrote or decided ourselves
 

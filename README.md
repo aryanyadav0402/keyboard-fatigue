@@ -46,6 +46,30 @@ uv run pytest
 
 The simulator writes check-ins in the app's format for two worlds: one where fatigue changes typing and one where it doesn't. Their reports are in `analysis/results/`.
 
+## Live predictions for the dashboard
+
+`serve.py` runs on the laptop where the check-in app saves its files. It watches the app's `data/sessions` folder, rescores within a few seconds of each new check-in, and serves the results as JSON:
+
+```bash
+uv run python serve.py --data /path/to/typing_station/data/sessions
+```
+
+| Endpoint | What it returns |
+|---|---|
+| `GET /api/latest` | Each person's latest check-in: `person`, `participant_type`, `timestamp`, `kss_reported`, `tiredness_pred` (1–9), `tired_prob`, `model`, `nap_suggested` and `push_warning`, most tired first, plus `nap_at` and `push_warning_at` |
+| `GET /api/history` | Every check-in with `checkin_id`, `person`, `timestamp`, `kss_reported`, `tiredness_pred`, `tired_prob`, `model`, `is_baseline` and `question_type`, for charts over the night |
+| `GET /api/checkin/<checkin_id>` | One check-in, for showing someone their score right after they finish. It returns 404 for a few seconds until the check-in is scored. |
+| `GET /api/status` | How many check-ins and people there are, whether the model is ready, and what's missing if it isn't |
+
+It answers on `http://localhost:8765` by default, with CORS headers so a dashboard on another address can read it. `--host 0.0.0.0` shares it with other laptops on the same Wi-Fi, and `cloudflared tunnel --url http://localhost:8765` gives a public HTTPS link, for example for a dashboard on Vercel. After each update it also writes `status.json`, `latest.json` and `history.json` to `results/live/`.
+
+`model` says which model made the prediction:
+- `panel model`: a teammate, compared with their own first two check-ins
+- `no-baseline model`: someone without a baseline, such as a judge, so it's a rough first guess
+- `not enough data yet`: the model needs 3 teammates with 3 check-ins each beyond their first two, and 15 in total, so `tiredness_pred` is empty
+
+These live predictions come from a model trained on everyone, so they look better than the honest numbers in the report, where each person is predicted by a model that never saw them.
+
 ## What the analysis does
 
 - **Features:** typing speed, rhythm, pauses, key hold times, errors, the vowel rule's cost and Shift timing, and the reaction test's median, speed and lapses. Timings leave out Shift presses and corrections. `features_raw.csv` has each feature as measured. `features_processed.csv` has each one as a change from the person's first two check-ins, with backspaces per 100 keys left as they are, and the models use its columns.
@@ -61,6 +85,7 @@ The simulator writes check-ins in the app's format for two worlds: one where fat
 | `export_features.py` | Writes just the raw and processed feature files |
 | `model.py` | Models and their evaluation |
 | `report.py` | The report, figures and predictions |
+| `serve.py` | Live predictions as JSON for the dashboard |
 | `run_all.py`, `predict_latest.py`, `simulate.py` | The commands above |
 
 `data/` is kept out of git because it holds people's keystrokes. Results from real check-ins stay out of git too.

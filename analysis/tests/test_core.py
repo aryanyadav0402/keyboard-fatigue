@@ -8,8 +8,9 @@ import pytest
 from features import (add_clock, adjust_for_rule_type, add_hours_awake, build_features, hours_awake, processed_table, pvt_features,
                       raw_table, typing_features)
 from load_data import load_sessions, pair_presses
-from model import run_models
+from model import add_flags, run_models
 from report import write_outputs
+from serve import Feed, build_payloads, make_handler
 from simulate import make_people, make_schedule, make_session, make_states
 from tasks import POOL, apply_rule, capitalise_vowels, score, sentence_ok
 
@@ -197,3 +198,42 @@ def test_rule_features_are_measured_against_the_panels_typical_value_for_that_ru
     assert out.vt_rule_cost_adj.iloc[6] == pytest.approx(2.0)  # the walk-up doesn't move the reference
     # other features: minus the rule's panel median, plus the panel's overall median (37)
     assert out.vt_wpm_adj.iloc[:3].tolist() == pytest.approx([35, 37, 39])
+
+
+def test_nap_rota_keeps_two_people_awake_and_push_warning_starts_at_8():
+    latest = pd.DataFrame({"person": ["A", "B", "C", "D", "J"],
+                           "participant_type": ["panel"] * 4 + ["oneoff"],
+                           "tiredness_pred": [8.2, 7.4, 7.1, 3.0, 8.5]})
+    out = add_flags(latest).set_index("person")
+    assert out.nap_suggested.to_dict() == {"A": True, "B": True, "C": False, "D": False, "J": False}
+    assert out.push_warning.to_dict() == {"A": True, "B": False, "C": False, "D": False, "J": True}
+
+
+def test_payloads_are_plain_json_even_before_the_model_is_ready(few_sessions):
+    payloads = build_payloads(few_sessions)
+    assert payloads["status"]["checkins"] == 3 and not payloads["status"]["models_ready"]
+    assert len(payloads["history"]["checkins"]) == 3
+    assert payloads["latest"]["people"][0]["model"] == "not enough data yet"
+    json.dumps(payloads, allow_nan=False)  # no NaN, numpy types or timestamps left
+
+
+def test_the_api_answers_with_cors(few_sessions):
+    import threading
+    import urllib.request
+    from http.server import ThreadingHTTPServer
+
+    feed = Feed(few_sessions)
+    feed.refresh_if_changed()
+    server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(feed))
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{server.server_address[1]}"
+    try:
+        with urllib.request.urlopen(base + "/api/latest") as response:
+            assert response.headers["Access-Control-Allow-Origin"] == "*"
+            body = json.load(response)
+        checkin_id = feed.get("history")["checkins"][0]["checkin_id"]
+        with urllib.request.urlopen(f"{base}/api/checkin/{checkin_id}") as response:
+            assert json.load(response)["checkin_id"] == checkin_id
+    finally:
+        server.shutdown()
+    assert body["nap_at"] == 7 and len(body["people"]) == 1

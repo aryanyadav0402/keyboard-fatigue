@@ -288,30 +288,55 @@ def run_models(f: pd.DataFrame, n_perm: int = 500, seed: int = 0) -> dict:
     return r
 
 
-def latest_predictions(f: pd.DataFrame) -> pd.DataFrame:
-    """Each person's latest check-in with predicted KSS, from models trained on all panel data."""
+NAP_AT, PUSH_WARNING_AT, KEEP_AWAKE = 7, 8, 2
+
+
+def all_predictions(f: pd.DataFrame) -> pd.DataFrame:
+    """Predicted KSS for every check-in, from models trained on all panel data, for the dashboard.
+
+    Panel check-ins use the typing-only panel model, anchored on the person's own first two
+    check-ins. One-off people, and everyone before the panel model has enough data, get the
+    no-baseline model. These are in-sample, so they look better than the report's numbers, which
+    always predict each person from a model trained on everyone else.
+    """
+    out = f[["checkin_id", "person", "participant_type", "timestamp", "kss"]].rename(columns={"kss": "kss_reported"})
+    for col in ("is_baseline", "question_type"):
+        out[col] = f[col] if col in f else None
+    pred, prob = np.full(len(f), np.nan), np.full(len(f), np.nan)
+    source = np.full(len(f), "not enough data yet", dtype=object)
     d = scored(f)
-    typing = cols = present(d, TYPING)  # no hours awake: the demo can't ask for it
-    main = clf = None
-    if not missing_data(d) and typing:
-        main = ridge().fit(d[cols].to_numpy(float), d.kss_delta.to_numpy(float))
-        tired = tired_labels(d)
-        if len(np.unique(tired)) == 2:
-            clf = logistic().fit(d[cols].to_numpy(float), tired)
+    typing = present(d, TYPING)  # no hours awake: the demo can't ask for it
+    if typing and not missing_data(d):
+        main = ridge().fit(d[typing].to_numpy(float), d.kss_delta.to_numpy(float))
+        use = (f.participant_type.eq("panel") & f.kss_base.notna()).to_numpy()
+        if use.any():
+            X = f.loc[use, typing].to_numpy(float)
+            pred[use] = main.predict(X) + f.loc[use, "kss_base"].to_numpy(float)
+            source[use] = "panel model"
+            tired = tired_labels(d)
+            if len(np.unique(tired)) == 2:
+                prob[use] = logistic().fit(d[typing].to_numpy(float), tired).predict_proba(X)[:, 1]
     fallback, fallback_cols = no_baseline_model(f)
-    rows = []
-    for person, g in f.sort_values("timestamp").groupby("person"):
-        last = g.iloc[[-1]]
-        pred, prob, source = np.nan, np.nan, "not enough data yet"
-        if last.participant_type.iloc[0] == "panel" and main is not None and pd.notna(last.kss_base.iloc[0]):
-            X = last[cols].to_numpy(float)
-            pred, source = main.predict(X)[0] + last.kss_base.iloc[0], "panel model"
-            if clf is not None:
-                prob = clf.predict_proba(X)[0, 1]
-        elif fallback is not None:
-            pred, source = fallback.predict(last[fallback_cols].to_numpy(float))[0], "no-baseline model"
-        rows.append({"person": person, "participant_type": last.participant_type.iloc[0],
-                     "timestamp": last.timestamp.iloc[0], "kss_reported": last.kss.iloc[0],
-                     "tiredness_pred": float(np.clip(pred, 1, 9)) if np.isfinite(pred) else np.nan,
-                     "tired_prob": float(prob), "model": source})
-    return pd.DataFrame(rows)
+    rest = np.isnan(pred)
+    if fallback is not None and rest.any():
+        pred[rest] = fallback.predict(f.loc[rest, fallback_cols].to_numpy(float))
+        source[rest] = "no-baseline model"
+    out["tiredness_pred"] = np.clip(pred, 1, 9)
+    out["tired_prob"] = prob
+    out["model"] = source
+    return out
+
+
+def add_flags(latest: pd.DataFrame) -> pd.DataFrame:
+    """Nap suggestions (KSS 7+, most tired first, keeping 2 panel people awake) and push warnings (8+)."""
+    panel = latest[latest.participant_type == "panel"]
+    tired = panel[panel.tiredness_pred >= NAP_AT].sort_values("tiredness_pred", ascending=False)
+    nappers = set(tired.person[: max(0, len(panel) - KEEP_AWAKE)])
+    return latest.assign(nap_suggested=latest.person.isin(nappers),
+                         push_warning=latest.tiredness_pred >= PUSH_WARNING_AT)
+
+
+def latest_predictions(f: pd.DataFrame) -> pd.DataFrame:
+    """Each person's latest check-in with predicted KSS and the nap and push flags."""
+    preds = all_predictions(f).sort_values("timestamp")
+    return add_flags(preds.groupby("person").tail(1).reset_index(drop=True))
