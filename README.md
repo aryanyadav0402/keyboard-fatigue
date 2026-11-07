@@ -42,4 +42,4 @@ checkin_id, person, task (plain or rule), seq, key, code, down_ms, up_ms
 
 ## Credits
 
-Claude Code helped build this project. `AI_USAGE.md` records what AI generated and what was built before the event.
+Claude Code helped build this project. `AI_USAGE.md` records what AI generated and what we wrote ourselves.

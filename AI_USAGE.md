@@ -20,10 +20,3 @@ Keep this current while building, and copy it into the submission. The event's C
 ## Frameworks and public code
 
 -
-
-## Built before the event
-
-This work doesn't count towards prizes, but the Code of Conduct says to disclose it.
-
-- Setup and checking tools kept out of this repo: `check.sh`, `set-key.sh`, and the Claude Code workflows `track-triage` and `pre-submit-check`.
--
