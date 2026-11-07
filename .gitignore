@@ -14,3 +14,8 @@ __pycache__/
 
 # People's keystroke logs stay off GitHub
 data/
+
+# Results from real check-ins stay local; simulated results are committed
+analysis/results/*
+!analysis/results/sim_effect/
+!analysis/results/sim_null/

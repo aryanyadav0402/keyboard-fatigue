@@ -1,0 +1,202 @@
+[
+  {
+    "id": 0,
+    "sentence": "the little dog ran across the park to find a ball",
+    "rule_expected": "thE lIttlE dOg rAn AcrOss thE pArk tO fInd A bAll"
+  },
+  {
+    "id": 1,
+    "sentence": "we made fresh bread and soup for our friends on sunday",
+    "rule_expected": "wE mAdE frEsh brEAd And sOUp fOr OUr frIEnds On sUndAy"
+  },
+  {
+    "id": 2,
+    "sentence": "my sister likes to read books under the old oak tree",
+    "rule_expected": "my sIstEr lIkEs tO rEAd bOOks UndEr thE Old OAk trEE"
+  },
+  {
+    "id": 3,
+    "sentence": "the children played outside until the sun went down",
+    "rule_expected": "thE chIldrEn plAyEd OUtsIdE UntIl thE sUn wEnt dOwn"
+  },
+  {
+    "id": 4,
+    "sentence": "our team went for a long walk along the quiet beach",
+    "rule_expected": "OUr tEAm wEnt fOr A lOng wAlk AlOng thE qUIEt bEAch"
+  },
+  {
+    "id": 5,
+    "sentence": "he found an old map hidden inside a wooden box",
+    "rule_expected": "hE fOUnd An Old mAp hIddEn InsIdE A wOOdEn bOx"
+  },
+  {
+    "id": 6,
+    "sentence": "the baker sells warm cakes and sweet buns every day",
+    "rule_expected": "thE bAkEr sElls wArm cAkEs And swEEt bUns EvEry dAy"
+  },
+  {
+    "id": 7,
+    "sentence": "a small bird sang a happy song outside my window",
+    "rule_expected": "A smAll bIrd sAng A hAppy sOng OUtsIdE my wIndOw"
+  },
+  {
+    "id": 8,
+    "sentence": "they planted tomatoes and beans in the back garden",
+    "rule_expected": "thEy plAntEd tOmAtOEs And bEAns In thE bAck gArdEn"
+  },
+  {
+    "id": 9,
+    "sentence": "the kind teacher gave each student a bright gold star",
+    "rule_expected": "thE kInd tEAchEr gAvE EAch stUdEnt A brIght gOld stAr"
+  },
+  {
+    "id": 10,
+    "sentence": "we watched the stars from the roof on a clear night",
+    "rule_expected": "wE wAtchEd thE stArs frOm thE rOOf On A clEAr nIght"
+  },
+  {
+    "id": 11,
+    "sentence": "the cat slept on a soft blanket next to the fire",
+    "rule_expected": "thE cAt slEpt On A sOft blAnkEt nExt tO thE fIrE"
+  },
+  {
+    "id": 12,
+    "sentence": "a gentle breeze moved the leaves on the apple tree",
+    "rule_expected": "A gEntlE brEEzE mOvEd thE lEAvEs On thE ApplE trEE"
+  },
+  {
+    "id": 13,
+    "sentence": "the old train rolled slowly over the stone bridge",
+    "rule_expected": "thE Old trAIn rOllEd slOwly OvEr thE stOnE brIdgE"
+  },
+  {
+    "id": 14,
+    "sentence": "she wrote a long letter to her friend in another town",
+    "rule_expected": "shE wrOtE A lOng lEttEr tO hEr frIEnd In AnOthEr tOwn"
+  },
+  {
+    "id": 15,
+    "sentence": "we ate ice cream on the pier and watched the boats",
+    "rule_expected": "wE AtE IcE crEAm On thE pIEr And wAtchEd thE bOAts"
+  },
+  {
+    "id": 16,
+    "sentence": "the farmer opened the gate and the sheep ran out",
+    "rule_expected": "thE fArmEr OpEnEd thE gAtE And thE shEEp rAn OUt"
+  },
+  {
+    "id": 17,
+    "sentence": "a bright orange kite flew high above the open field",
+    "rule_expected": "A brIght OrAngE kItE flEw hIgh AbOvE thE OpEn fIEld"
+  },
+  {
+    "id": 18,
+    "sentence": "the museum was full of strange and beautiful objects",
+    "rule_expected": "thE mUsEUm wAs fUll Of strAngE And bEAUtIfUl ObjEcts"
+  },
+  {
+    "id": 19,
+    "sentence": "our neighbour baked a pie and shared it with us",
+    "rule_expected": "OUr nEIghbOUr bAkEd A pIE And shArEd It wIth Us"
+  },
+  {
+    "id": 20,
+    "sentence": "the river was calm and the water looked very clear",
+    "rule_expected": "thE rIvEr wAs cAlm And thE wAtEr lOOkEd vEry clEAr"
+  },
+  {
+    "id": 21,
+    "sentence": "we sang songs around the campfire under the moon",
+    "rule_expected": "wE sAng sOngs ArOUnd thE cAmpfIrE UndEr thE mOOn"
+  },
+  {
+    "id": 22,
+    "sentence": "my brother built a robot out of paper and old boxes",
+    "rule_expected": "my brOthEr bUIlt A rObOt OUt Of pApEr And Old bOxEs"
+  },
+  {
+    "id": 23,
+    "sentence": "the library opens early and closes late on fridays",
+    "rule_expected": "thE lIbrAry OpEns EArly And clOsEs lAtE On frIdAys"
+  },
+  {
+    "id": 24,
+    "sentence": "a family of ducks swam across the pond in a line",
+    "rule_expected": "A fAmIly Of dUcks swAm AcrOss thE pOnd In A lInE"
+  },
+  {
+    "id": 25,
+    "sentence": "she bought apples and grapes at the busy market",
+    "rule_expected": "shE bOUght ApplEs And grApEs At thE bUsy mArkEt"
+  },
+  {
+    "id": 26,
+    "sentence": "the snow covered the hills and the roads were quiet",
+    "rule_expected": "thE snOw cOvErEd thE hIlls And thE rOAds wErE qUIEt"
+  },
+  {
+    "id": 27,
+    "sentence": "an old man fed bread to the pigeons in the square",
+    "rule_expected": "An Old mAn fEd brEAd tO thE pIgEOns In thE sqUArE"
+  },
+  {
+    "id": 28,
+    "sentence": "the band played music while people danced in the hall",
+    "rule_expected": "thE bAnd plAyEd mUsIc whIlE pEOplE dAncEd In thE hAll"
+  },
+  {
+    "id": 29,
+    "sentence": "he opened the window to let some fresh air inside",
+    "rule_expected": "hE OpEnEd thE wIndOw tO lEt sOmE frEsh AIr InsIdE"
+  },
+  {
+    "id": 30,
+    "sentence": "a red balloon floated up into the blue evening sky",
+    "rule_expected": "A rEd bAllOOn flOAtEd Up IntO thE blUE EvEnIng sky"
+  },
+  {
+    "id": 31,
+    "sentence": "the twins made a cake for their mother on her birthday",
+    "rule_expected": "thE twIns mAdE A cAkE fOr thEIr mOthEr On hEr bIrthdAy"
+  },
+  {
+    "id": 32,
+    "sentence": "our class visited a farm and fed the baby goats",
+    "rule_expected": "OUr clAss vIsItEd A fArm And fEd thE bAby gOAts"
+  },
+  {
+    "id": 33,
+    "sentence": "the moon was huge and orange above the dark sea",
+    "rule_expected": "thE mOOn wAs hUgE And OrAngE AbOvE thE dArk sEA"
+  },
+  {
+    "id": 34,
+    "sentence": "she keeps her seeds in a jar on the kitchen shelf",
+    "rule_expected": "shE kEEps hEr sEEds In A jAr On thE kItchEn shElf"
+  },
+  {
+    "id": 35,
+    "sentence": "we found a quiet cafe and ordered two hot drinks",
+    "rule_expected": "wE fOUnd A qUIEt cAfE And OrdErEd twO hOt drInks"
+  },
+  {
+    "id": 36,
+    "sentence": "a friendly horse ate an apple from my open hand",
+    "rule_expected": "A frIEndly hOrsE AtE An ApplE frOm my OpEn hAnd"
+  },
+  {
+    "id": 37,
+    "sentence": "the rain stopped and a rainbow appeared over the town",
+    "rule_expected": "thE rAIn stOppEd And A rAInbOw AppEArEd OvEr thE tOwn"
+  },
+  {
+    "id": 38,
+    "sentence": "the puppy chased its tail around the living room",
+    "rule_expected": "thE pUppy chAsEd Its tAIl ArOUnd thE lIvIng rOOm"
+  },
+  {
+    "id": 39,
+    "sentence": "a boat with white sails moved across the calm bay",
+    "rule_expected": "A bOAt wIth whItE sAIls mOvEd AcrOss thE cAlm bAy"
+  }
+]

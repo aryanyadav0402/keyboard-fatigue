@@ -12,6 +12,7 @@ Keep this current while building, and copy it into the submission. The event's C
 | Part of the project | Tool | Roughly how much | Who reviewed it |
 |---|---|---|---|
 | README and repo setup | Claude Code | all of it | not reviewed yet |
+| Sentence pool, vowel rule and answer scoring (`analysis/tasks.py`, `items.json`) | Claude Code | all of it | not reviewed yet |
 
 ## What we wrote or decided ourselves
 
