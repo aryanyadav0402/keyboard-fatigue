@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from features import (add_clock, add_hours_awake, build_features, hours_awake, processed_table, pvt_features,
+from features import (add_clock, adjust_for_rule_type, add_hours_awake, build_features, hours_awake, processed_table, pvt_features,
                       raw_table, typing_features)
 from load_data import load_sessions, pair_presses
 from model import run_models
@@ -182,3 +182,18 @@ def test_clock_falls_back_to_hours_since_first_checkin():
     out = add_clock(f)
     assert out.hours_clock.tolist() == pytest.approx([0, 1.5, 4.0])
     assert (out.clock_basis == "hours since first check-in").all()
+
+
+def test_rule_features_are_measured_against_the_panels_typical_value_for_that_rule():
+    f = pd.DataFrame({
+        "participant_type": ["panel"] * 6 + ["oneoff"],
+        "question_type": ["capitalize_vowels"] * 3 + ["dashes_for_spaces"] * 4,
+        "vt_rule_cost": [1.4, 1.5, 1.6, 1.1, 1.2, 1.3, 2.4],
+        "vt_wpm": [30, 32, 34, 40, 42, 44, 10],
+    })
+    out = adjust_for_rule_type(f)
+    # rule cost is divided by the panel's median for that rule, so 1.0 = normal for that rule
+    assert out.vt_rule_cost_adj.iloc[:6].tolist() == pytest.approx([1.4 / 1.5, 1, 1.6 / 1.5, 1.1 / 1.2, 1, 1.3 / 1.2])
+    assert out.vt_rule_cost_adj.iloc[6] == pytest.approx(2.0)  # the walk-up doesn't move the reference
+    # other features: minus the rule's panel median, plus the panel's overall median (37)
+    assert out.vt_wpm_adj.iloc[:3].tolist() == pytest.approx([35, 37, 39])

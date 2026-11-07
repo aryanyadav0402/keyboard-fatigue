@@ -97,7 +97,7 @@ def make_figures(f: pd.DataFrame, r: dict, folder: Path) -> dict:
         for person, g in panel.dropna(subset=["hours_clock", "vt_rule_cost_adj"]).groupby("person"):
             ax.plot(g.hours_clock, g.vt_rule_cost_adj, "-o", ms=3, lw=1, label=person)
         ax.set_xlabel(clock_basis(panel))
-        ax.set_ylabel("rule cost, adjusted for the rule type")
+        ax.set_ylabel("rule cost (1.0 = normal for that rule)")
         ax.set_title("Task 1 rule cost over the night, in time order")
         ax.legend(fontsize=7, ncol=2)
         made["rule_cost"] = save(fig, folder / "rule_cost_vs_hours.png")
@@ -302,8 +302,9 @@ def report_text(tables: Tables, f: pd.DataFrame, r: dict, figures: dict, data_di
               f"- Typing features in the models: {', '.join(r['typing']) or 'none yet'}.",
               f"- Fixed features with no data here: {', '.join(r['inactive']) or 'none'}.",
               f"- Reaction-test features: {', '.join(r['rt']) or 'none yet'}.",
-              "- Task 1's rule changes every visit, so its features are first adjusted for the rule type (minus "
-              "that rule's average, plus the overall average).",
+              "- Task 1's rule changes every visit, so its features are first measured against the panel's typical "
+              "value for that rule. Rule cost and accuracy are divided by it (1.0 = normal for that rule); the "
+              "others have it subtracted.",
               "- `_dev` features are each person's change from the average of their first two check-ins. "
               "Backspaces per 100 keys aren't compared with the baseline.",
               "- The clock is hours awake when the app records a wake-up time (reset after a sleep of an hour or "

@@ -6,8 +6,9 @@ to a correction (Backspace or a wrong key) are left out. Task 1's rule rotates b
 such as capital vowels or dashes; "ordinary" keys are the ones it leaves alone. The rule cost is
 the median gap next to a rule key divided by the median gap between ordinary keys.
 
-Some rules are harder than others, so Task 1 features also get a rule-adjusted version (_adj):
-the feature minus its average for that rule type, plus its overall average.
+Some rules are harder than others, so Task 1 features also get a rule-adjusted version (_adj),
+measured against the panel's typical value for that rule. Rule cost and accuracy are divided by
+it, so 1.0 means normal for that rule; the other features have it subtracted.
 
 Processed versions (suffix _dev) subtract the person's average over their first two check-ins
 (their baseline), so they read as "change from your own normal". kss_delta and hours_rel do the
@@ -41,6 +42,8 @@ RELATIVE = [
 ]
 # Task 1 features that depend on which rule was shown, so they get a rule-adjusted (_adj) version.
 TYPE_ADJUSTED = [c for c in RELATIVE if c.startswith("vt_")] + ["backspace_per100"]
+RATIO_ADJUSTED = ("vt_rule_cost", "vt_accuracy")  # divided by the rule's typical value: 1.0 = normal
+MIN_PANEL_PER_RULE = 3
 
 
 def iqr(x) -> float:
@@ -236,11 +239,29 @@ def add_clock(f: pd.DataFrame) -> pd.DataFrame:
 
 
 def adjust_for_rule_type(f: pd.DataFrame) -> pd.DataFrame:
-    """Add _adj versions of Task 1 features: minus that rule type's average, plus the overall average."""
+    """Add _adj versions of Task 1 features that don't depend on which rule was shown.
+
+    The reference is the panel's typical (median) value for that rule type, so walk-ups and judges
+    never shape it; a rule type with fewer than 3 panel check-ins falls back to every check-in of
+    that type. Rule cost and accuracy are divided by it, so 1.0 means normal for that rule. The
+    other features have it subtracted and the panel's overall median added back.
+    """
     cols = [c for c in TYPE_ADJUSTED if c in f]
     if "question_type" not in f or not cols:
         return f
-    new = {c + "_adj": f[c] - f.groupby("question_type")[c].transform("mean") + f[c].mean() for c in cols}
+    panel = f.participant_type.eq("panel")
+    new = {}
+    for col in cols:
+        typical = f.groupby("question_type")[col].median()
+        on_panel = f[panel].groupby("question_type")[col].agg(["median", "count"])
+        enough = on_panel.index[on_panel["count"] >= MIN_PANEL_PER_RULE]
+        typical.loc[enough] = on_panel.loc[enough, "median"]
+        reference = f.question_type.map(typical)
+        if col in RATIO_ADJUSTED:
+            new[col + "_adj"] = f[col] / reference.where(reference > 0)
+        else:
+            overall = f.loc[panel, col].median() if f.loc[panel, col].notna().any() else f[col].median()
+            new[col + "_adj"] = f[col] - reference + overall
     return pd.concat([f, pd.DataFrame(new, index=f.index)], axis=1)
 
 

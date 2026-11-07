@@ -51,7 +51,7 @@ The simulator writes check-ins in the app's format for two worlds: one where fat
 - **Features:** typing speed, rhythm, pauses, key hold times, errors, the vowel rule's cost and Shift timing, and the reaction test's median, speed and lapses. Timings leave out Shift presses and corrections. `features_raw.csv` has each feature as measured. `features_processed.csv` has each one as a change from the person's first two check-ins, with backspaces per 100 keys left as they are, and the models use its columns.
 - **Models:** ridge regression predicts each person's change in KSS from their own first two check-ins, using 6 typing features: the vowel rule's cost, backspaces, accuracy, rhythm unevenness, long pauses and key hold time. Predictions use typing only, because the demo can't ask how long someone has been awake. Every person is predicted by a model trained on everyone else, and a logistic regression separates tired check-ins from alert ones.
 - **The clock as a benchmark:** we compare typing alone with the clock alone. The clock is hours awake when the app records a wake-up time, and otherwise hours since the person's first check-in. Over one night, practice, tiredness and the clock all drift together, so a clock check also tests whether typing adds anything to the clock, by shuffling the typing features within each person.
-- **Rule types:** some of the app's five rules are harder than others, so each Task 1 feature is first adjusted by subtracting that rule's average.
+- **Rule types:** some of the app's five rules are harder than others, so each Task 1 feature is first measured against the panel's typical value for that rule. Rule cost and accuracy are divided by it, so 1.0 means normal for that rule.
 
 | File | What it does |
 |---|---|
