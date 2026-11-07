@@ -24,6 +24,7 @@ from tasks import apply_rule
 PANEL_COHORTS = {"teammate", "panel", "overnight"}
 MODIFIER_KEYS = {"Shift", "Control", "Alt", "AltGraph", "Meta", "CapsLock", "Fn", "OS"}
 SHIFT_FLAG, CAPS_LOCK_FLAG, REPEAT_FLAG = 1, 16, 32
+KEY_FIELDS = ["task", "unit", "type", "t", "code", "key", "flags"]  # the app's order for each key event
 # typing-station unit kinds, mapped onto our task names
 TASK_NAMES = {"transform": "rule", "copy": "plain", "plain": "plain", "free": "free"}
 SELF_REPORT = ["kss", "mental_fatigue", "motivation", "wake_time", "sleep_last_night_h",
@@ -145,7 +146,11 @@ def parse_session(d: dict, source_name: str = "session") -> dict:
 
     shown = {(u["task_idx"], u["unit"]): u for u in units}
     keys = []
-    for p in pair_presses(d.get("keys") or []):
+    fields = list(d.get("key_fields") or KEY_FIELDS)
+    events = d.get("keys") or []
+    if fields != KEY_FIELDS:  # columns in a different order: put them back in the usual one
+        events = [[dict(zip(fields, row)).get(f) for f in KEY_FIELDS] for row in events]
+    for p in pair_presses(events):
         u = shown.get((p["task_idx"], p["unit"]))
         if u is None or u["t_shown"] is None:
             continue  # reaction-test presses and anything outside a typing task

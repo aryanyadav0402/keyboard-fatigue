@@ -331,3 +331,20 @@ def test_post_score_keeps_the_best_attempt_without_touching_checkin_files(night,
     assert best[0] == 200 and best[1]["attempts"] == 1 and best[1]["score"] == ok[1]["score"]
     assert not_json[0] == 400 and too_little[0] == 422
     assert sorted(p.name for p in night.rglob("*")) == before  # no check-in files were written
+
+
+def test_a_whole_session_from_the_ui_uses_participant_id_as_the_username(night, tmp_path):
+    train, db = load_sessions(night), tmp_path / "demo.sqlite"
+    session = dict(a_session(night), participant_id="christy", metadata={"username": "christy"})
+    first = score_session(session, train, db)
+    again = score_session(session, train, db)
+    assert first["username"] == "CHRISTY" and first["best"]["new_best"]
+    assert again["model"] == "best-attempt model" and again["score"] == first["score"]
+    assert get_best(db, "CHRISTY")["attempts"] == 2
+
+
+def test_sessions_missing_most_key_events_are_rejected(night):
+    session = a_session(night)
+    typing_keys = [k for k in session["keys"] if k[0] == 0]
+    with pytest.raises(BadSession, match="key events cover only"):
+        score_session(dict(session, keys=typing_keys[:30]), empty_tables())

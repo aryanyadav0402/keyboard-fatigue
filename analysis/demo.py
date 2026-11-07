@@ -184,12 +184,16 @@ def compared_with_best(row: pd.Series, best_features: dict, typing: list[str]) -
     for col in typing:
         if col.endswith("_dev"):  # change from the best attempt, like the panel's change from baseline
             reference = best_features.get(col[: -len("_dev")] + "_adj")
-            attempt.append(np.nan if reference is None or pd.isna(row.get(col[:-4] + "_adj")) else
-                           float(row[col[:-4] + "_adj"]) - reference)
-            repeat.append(0.0)
+            value = row.get(col[: -len("_dev")] + "_adj")
+            missing = reference is None or pd.isna(value)
+            attempt.append(np.nan if missing else float(value) - reference)
+            repeat.append(np.nan if missing else 0.0)
         else:  # used as it is, such as backspaces per 100 keys
-            attempt.append(float(row[col]) if pd.notna(row.get(col)) else np.nan)
-            repeat.append(np.nan if best_features.get(col) is None else best_features[col])
+            value, reference = row.get(col), best_features.get(col)
+            missing = reference is None or pd.isna(value)
+            attempt.append(np.nan if missing else float(value))
+            repeat.append(np.nan if missing else reference)
+    # A feature missing from either attempt is missing from both, so it can't shift the score.
     return attempt, repeat
 
 
@@ -197,7 +201,10 @@ def score_session(body: dict, train: Tables, db_path: str | Path | None = None) 
     """Score one posted attempt against the team's check-ins, comparing it with the user's best attempt."""
     if not isinstance(body, dict):
         raise BadSession("send a JSON object")
-    given = str(body.get("username") or body.get("name") or "").strip()
+    # The short form sends "username"; a whole session carries it as participant_id (or metadata.username).
+    metadata = body.get("metadata") if isinstance(body.get("metadata"), dict) else {}
+    given = str(body.get("username") or body.get("name") or body.get("participant_id")
+                or metadata.get("username") or "").strip()
     username = normalise_name(given) or None
     person = f"DEMO:{username or uuid.uuid4()}"  # kept apart from the team's own IDs
     if body.get("schema") == "typing-station":
@@ -219,6 +226,10 @@ def score_session(body: dict, train: Tables, db_path: str | Path | None = None) 
     row = f.loc[f.checkin_id == parsed["session"]["checkin_id"]].iloc[0]
     if pd.isna(row.get("vt_wpm")):
         raise BadSession("not enough typing to score: send at least 5 key presses from the sentence")
+    typed_chars = len(str(parsed["units"][0].get("typed") or "").rstrip("\n"))
+    if row.get("vt_n_keys", 0) < 0.6 * typed_chars:
+        raise BadSession(f"the key events cover only {int(row.get('vt_n_keys', 0))} of the {typed_chars} typed "
+                         "characters: send every key press and release from the sentence")
 
     m = display_models(f)
     best = get_best(db_path, username)
