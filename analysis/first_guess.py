@@ -88,9 +88,14 @@ def describe(model: FatigueIndex, panel_X, x) -> dict | None:
     This is what the demo shows someone with no baseline: how their typing compares with the team's
     check-ins over a night, rather than a tiredness rating converted from a handful of people.
     """
+    return describe_from_index(model, model.index(np.asarray(panel_X, float)), x)
+
+
+def describe_from_index(model: FatigueIndex, panel_index, x) -> dict | None:
+    """describe(), given the panel's index values instead of their features (as a frozen model keeps them)."""
     x = np.asarray(x, float).reshape(1, -1)
     value = model.index(x)[0]
-    panel = model.index(np.asarray(panel_X, float))
+    panel = np.asarray(panel_index, float)
     panel = panel[~np.isnan(panel)]
     if np.isnan(value) or len(panel) == 0:
         return None

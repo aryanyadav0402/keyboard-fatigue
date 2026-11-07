@@ -141,6 +141,45 @@ To try the endpoint without the UI, start `serve.py` on the simulated night and 
 curl -X POST -H "Content-Type: application/json" --data @examples/score_request.json http://localhost:8765/api/score
 ```
 
+## Hosted scoring for the demo page
+
+The demo page calls a hosted copy of `POST /api/score` at **https://keyboard-fatigue-api.vercel.app**, so it doesn't need this laptop. The API serves frozen models: plain numbers exported from a training run, with no names, timestamps or keystrokes. It retrains nothing, stores nothing and never logs requests.
+
+| Endpoint | What it does |
+|---|---|
+| `POST /api/score` | Scores one attempt. The request and reply match the local `POST /api/score` above, and the reply adds `best_reference` and `model_version` |
+| `GET /api/models` | Lists the models it serves, which one is the default, what each was trained on and what it can do |
+
+How it differs from the local server:
+- **The page keeps each user's best.** A reply for someone with a `username` includes `best_reference`, their best attempt so far, as numbers. Save it for that username, for example in `localStorage`, and send it back as `best_reference` with their next attempt. Without it, every attempt counts as a first attempt. A `best_reference` from a different model is ignored, so everyone starts again after a model update.
+- **Choose a model** with `?model=<name>` or `"model"` in the body. Otherwise the API uses the default, the latest export from our real check-ins. `sim-test` was trained on a simulated night and its scores vary, so use it to try the UI. `model_version` in the reply says which model answered.
+- There's no `GET /api/best/<username>`, because the page already holds the best in `best_reference`.
+- Errors: 400 if the body isn't JSON, 404 for an unknown model, 413 if the body is over 2 MB, 422 if there isn't enough typing to score, and 500 for anything else.
+
+```js
+const API = "https://keyboard-fatigue-api.vercel.app";
+const saved = "best:" + username.trim().toLowerCase();
+const best_reference = JSON.parse(localStorage.getItem(saved) || "null");
+const response = await fetch(`${API}/api/score`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ username, sentence, rule, typed: box.value, shown_at: shownAt, keys, best_reference }),
+});
+const result = await response.json();
+if (response.ok && result.best_reference) localStorage.setItem(saved, JSON.stringify(result.best_reference));
+```
+
+To update the models, export one from the latest check-ins, copy the code into `service/lib/` and deploy from the Vercel CLI:
+
+```bash
+cd analysis
+uv run python export_model.py --data ../data/sessions --name team-2026-11-08-0900 --default
+uv run python ../service/build.py
+cd ../service && vercel deploy --prod
+```
+
+`export_model.py` saves the model to `service/models/` and lists it in `service/models/index.json`, and `--default` makes it the default. To try the API on this laptop before deploying, run `uv run python ../service/dev_server.py` from `analysis/`; it serves the API at `http://localhost:8766`.
+
 ## What the analysis does
 
 - **Features:** typing speed, rhythm, pauses, key hold times, errors, the vowel rule's cost and Shift timing, and the reaction test's median, speed and lapses. Timings leave out Shift presses and corrections. `features_raw.csv` has each feature as measured. `features_processed.csv` has each one as a change from the person's first two check-ins, with backspaces per 100 keys left as they are, and the models use its columns.
@@ -160,9 +199,11 @@ curl -X POST -H "Content-Type: application/json" --data @examples/score_request.
 | `compare_first_guess.py` | Compares first-guess models, predicting each panel person as a stranger |
 | `report.py` | The report, figures and predictions |
 | `serve.py` | Live predictions as JSON for the dashboard |
+| `demo.py`, `attempt.py` | Scores one demo attempt for `POST /api/score` |
+| `frozen_model.py`, `export_model.py` | Exports a trained model as plain numbers and scores with it, for the hosted API in `service/` |
 | `run_all.py`, `predict_latest.py`, `simulate.py` | The commands above |
 
-`data/` is kept out of git because it holds people's keystrokes. Results from real check-ins stay out of git too.
+`data/` is kept out of git because it holds people's keystrokes. Results from real check-ins stay out of git too, except the frozen models in `service/models/`, which hold only numbers.
 
 ## Built with
 
@@ -170,6 +211,7 @@ curl -X POST -H "Content-Type: application/json" --data @examples/score_request.
 - [Matplotlib](https://matplotlib.org/), under the Matplotlib licence
 - [pytest](https://pytest.org/), under the MIT licence
 - [uv](https://docs.astral.sh/uv/), under the MIT or Apache 2.0 licence
+- [Vercel](https://vercel.com/), which hosts the scoring API
 - The KSS (Åkerstedt and Gillberg, 1990), and the 3-minute reaction-time test with a 355 ms lapse cut-off (Basner, Mollicone and Dinges, 2011)
 
 ## Credits

@@ -1,0 +1,105 @@
+import json
+
+import numpy as np
+import pytest
+
+from attempt import BadSession
+from demo import score_session
+from features import build_features
+from frozen_model import describe_model, export_model, score_attempt
+from load_data import load_sessions
+from simulate import make_people, make_schedule, make_session, make_states
+
+
+@pytest.fixture(scope="module")
+def night(tmp_path_factory):
+    """A simulated night in the app's format: 7 teammates and 20 walk-ups."""
+    folder = tmp_path_factory.mktemp("night")
+    rng, world = np.random.default_rng(11), np.random.default_rng(12)
+    for p in make_people(rng):
+        times, sleep = make_schedule(rng, p)
+        for st in make_states(rng, p, times, sleep):
+            session = make_session(world, p, st, effect=True)
+            (folder / f"{p['id']}_{st['n']:02d}_{session['session_id']}.json").write_text(json.dumps(session))
+    return folder
+
+
+@pytest.fixture(scope="module")
+def frozen(night):
+    """The exported model, after a trip through JSON like the real file."""
+    return json.loads(json.dumps(export_model(build_features(load_sessions(night)), "test-model")))
+
+
+def demo_body(folder, who, n=1, username=None):
+    """The short form the demo page sends, from one simulated session's typing."""
+    session = json.loads(sorted(folder.glob(f"{who}_{n:02d}_*.json"))[0].read_text())
+    unit = session["units"][0]
+    keys = [{"type": "down" if k[2] == "d" else "up", "key": k[5], "code": k[4], "t": k[3]}
+            for k in session["keys"] if k[0] == 0]
+    return {"username": username, "sentence": unit["source"], "rule": unit["question_type"],
+            "typed": unit["typed"], "shown_at": unit["t_shown"], "keys": keys}
+
+
+def walkups(folder):
+    return sorted({p.name.split("_")[0] for p in folder.glob("WALKUP-*.json")})
+
+
+def test_frozen_first_guess_matches_the_local_server(night, frozen):
+    train = load_sessions(night)
+    for who in walkups(night)[:5]:
+        body = demo_body(night, who)
+        local, hosted = score_session(body, train), score_attempt(body, frozen)
+        assert hosted["model"] == local["model"] == "no-baseline model"
+        assert hosted["score"] == pytest.approx(local["score"], abs=0.05)
+        assert hosted["fatigue_index"]["percentile"] == pytest.approx(local["fatigue_index"]["percentile"], abs=1)
+        assert hosted["features"] == local["features"]
+        assert hosted["model_version"] == "test-model"
+
+
+def test_frozen_best_attempt_matches_the_local_server(night, frozen, tmp_path):
+    assert frozen["personal"], "the simulated night should have enough data for the personal model"
+    train, db = load_sessions(night), tmp_path / "local.sqlite"
+    first, second = demo_body(night, "PANEL-01", 1, "zoe"), demo_body(night, "PANEL-01", 9, "zoe")
+    score_session(first, train, db)
+    local = score_session(second, train, db)
+    hosted_first = score_attempt(first, frozen)
+    hosted = score_attempt(second, frozen, hosted_first["best_reference"])
+    assert local["model"] == hosted["model"] == "best-attempt model"
+    assert hosted["score"] == pytest.approx(local["score"], abs=0.05)
+    assert hosted["best"]["attempts"] == local["best"]["attempts"] == 2
+    assert hosted["fatigue_index"] is None and hosted["scaled_features"]
+
+
+def test_best_reference_keeps_the_most_alert_attempt(night, frozen):
+    body = demo_body(night, "PANEL-02", 1, "sam")
+    first = score_attempt(body, frozen)
+    assert first["best"] == {"score": first["score"], "attempts": 1, "new_best": True, "best_at": first["best"]["best_at"]}
+    again = score_attempt(body, frozen, first["best_reference"])  # typing exactly like the best attempt
+    assert again["score"] == pytest.approx(first["score"]) and not again["best"]["new_best"]
+    assert again["best"]["attempts"] == 2 and again["best_reference"]["score"] == first["best_reference"]["score"]
+    no_name = score_attempt(dict(body, username=None), frozen, first["best_reference"])
+    assert no_name["best"] is None and no_name["model"] == "no-baseline model"
+
+
+def test_best_from_another_model_starts_the_user_again(night, frozen):
+    body = demo_body(night, "PANEL-02", 1, "sam")
+    first = score_attempt(body, frozen)
+    old = dict(first["best_reference"], model_version="an-older-model")
+    again = score_attempt(body, frozen, old)
+    assert again["model"] == "no-baseline model" and again["fatigue_index"] is not None
+    assert again["best"]["attempts"] == 1 and again["best"]["new_best"]
+    assert again["best_reference"]["model_version"] == frozen["name"]
+
+
+def test_bad_requests_are_refused(night, frozen):
+    with pytest.raises(BadSession):
+        score_attempt([], frozen)
+    with pytest.raises(BadSession):
+        score_attempt(demo_body(night, "PANEL-01", 1, "zoe"), frozen, {"score": "high"})
+
+
+def test_model_file_holds_only_numbers_no_names(night, frozen):
+    text = json.dumps({k: v for k, v in frozen.items() if k != "created_at"})  # the export's own time is fine
+    assert "PANEL-" not in text and "WALKUP-" not in text and "2026-11-0" not in text
+    summary = describe_model(frozen)
+    assert summary["first_guess_ready"] and summary["personal_ready"] and len(summary["rules"]) == 5

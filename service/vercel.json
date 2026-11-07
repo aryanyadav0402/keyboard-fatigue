@@ -1,0 +1,10 @@
+{
+  "framework": null,
+  "outputDirectory": "public",
+  "functions": {
+    "api/*.py": {
+      "includeFiles": "{lib,models}/**",
+      "maxDuration": 10
+    }
+  }
+}

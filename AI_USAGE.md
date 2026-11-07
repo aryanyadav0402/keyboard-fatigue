@@ -23,6 +23,7 @@ Keep this current while building, and copy it into the submission. The event's C
 | Demo scoring: POST /api/score keeps each user's best attempt in SQLite and compares later attempts with it, plus GET /api/best (`analysis/demo.py`, `analysis/serve.py`) | Claude Code | all of it | not reviewed yet |
 | First-guess model for people with no baseline: the fatigue index, pauses relative to the person's own pace, and a comparison that predicts each panel person as a stranger (`analysis/first_guess.py`, `analysis/compare_first_guess.py`, with changes to `features.py` and `model.py`) | Claude Code | all of it | not reviewed yet |
 | The fatigue index as the demo's headline for people with no baseline: a percentile against the team's check-ins and what drove it (`fatigue_index` in `POST /api/score`, `describe` in `analysis/first_guess.py`) | Claude Code | all of it | not reviewed yet |
+| Hosted scoring API on Vercel: trained models exported as plain numbers, a scorer that needs neither the team's data nor scikit-learn, and the page keeping each user's best (`service/`, `analysis/frozen_model.py`, `analysis/export_model.py`, `analysis/attempt.py`, with changes to `features.py`, `first_guess.py` and `demo.py`) | Claude Code | all of it | not reviewed yet |
 
 ## What we wrote or decided ourselves
 

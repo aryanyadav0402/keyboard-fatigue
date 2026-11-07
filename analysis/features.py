@@ -243,31 +243,59 @@ def add_clock(f: pd.DataFrame) -> pd.DataFrame:
     return f
 
 
-def adjust_for_rule_type(f: pd.DataFrame) -> pd.DataFrame:
-    """Add _adj versions of Task 1 features that don't depend on which rule was shown.
+def number_or_nan(value) -> float:
+    return math.nan if value is None or pd.isna(value) else float(value)
 
-    The reference is the panel's typical (median) value for that rule type, so walk-ups and judges
-    never shape it; a rule type with fewer than 3 panel check-ins falls back to every check-in of
-    that type. Rule cost and accuracy are divided by it, so 1.0 means normal for that rule. The
-    other features have it subtracted and the panel's overall median added back.
+
+def rule_references(f: pd.DataFrame) -> dict:
+    """The typical value of each Task 1 feature for each rule type, and overall.
+
+    The typical value is the panel's median, so walk-ups and judges never shape it; a rule type
+    with fewer than 3 panel check-ins falls back to every check-in of that type. Plain numbers,
+    so a frozen model can carry them (see frozen_model.py).
     """
+    refs = {"typical": {}, "overall": {}}
     cols = [c for c in TYPE_ADJUSTED if c in f]
     if "question_type" not in f or not cols:
-        return f
+        return refs
     panel = f.participant_type.eq("panel")
-    new = {}
     for col in cols:
         typical = f.groupby("question_type")[col].median()
         on_panel = f[panel].groupby("question_type")[col].agg(["median", "count"])
         enough = on_panel.index[on_panel["count"] >= MIN_PANEL_PER_RULE]
         typical.loc[enough] = on_panel.loc[enough, "median"]
-        reference = f.question_type.map(typical)
+        refs["typical"][col] = {str(rule): number_or_nan(v) for rule, v in typical.items()}
+        refs["overall"][col] = number_or_nan(f.loc[panel, col].median() if f.loc[panel, col].notna().any()
+                                             else f[col].median())
+    return refs
+
+
+def apply_rule_references(f: pd.DataFrame, refs: dict) -> pd.DataFrame:
+    """Add _adj versions of Task 1 features, measured against the given typical values.
+
+    Rule cost and accuracy are divided by the typical value for that rule, so 1.0 means normal for
+    that rule. The other features have it subtracted and the overall typical value added back. A
+    rule type the references don't know is measured against the overall typical value.
+    """
+    if "question_type" not in f:
+        return f
+    f = f.drop(columns=[c for c in f if c.endswith("_adj")])
+    new = {}
+    for col, by_rule in refs["typical"].items():
+        if col not in f:
+            continue
+        overall = number_or_nan(refs["overall"].get(col))
+        reference = pd.to_numeric(f.question_type.map(by_rule), errors="coerce").fillna(overall)
         if col in RATIO_ADJUSTED:
             new[col + "_adj"] = f[col] / reference.where(reference > 0)
         else:
-            overall = f.loc[panel, col].median() if f.loc[panel, col].notna().any() else f[col].median()
             new[col + "_adj"] = f[col] - reference + overall
     return pd.concat([f, pd.DataFrame(new, index=f.index)], axis=1)
+
+
+def adjust_for_rule_type(f: pd.DataFrame) -> pd.DataFrame:
+    """Add _adj versions of Task 1 features that don't depend on which rule was shown."""
+    return apply_rule_references(f, rule_references(f))
 
 
 def add_relative(f: pd.DataFrame) -> pd.DataFrame:
