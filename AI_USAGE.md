@@ -21,6 +21,7 @@ Keep this current while building, and copy it into the submission. The event's C
 | Support for the check-in app's version 1.2 files: five rotating rules scored by their own rule, rule-type adjustment, 20-second reaction tests, a clock without wake-up times, skipped checkpoints; the simulator now writes this format (changes across `analysis/`) | Claude Code | all of it | not reviewed yet |
 | Live prediction service for the dashboard: watches the check-in folder and serves JSON (`analysis/serve.py`, with shared prediction code in `model.py` and `predict_latest.py`) | Claude Code | all of it | not reviewed yet |
 | Demo scoring: POST /api/score keeps each user's best attempt in SQLite and compares later attempts with it, plus GET /api/best (`analysis/demo.py`, `analysis/serve.py`) | Claude Code | all of it | not reviewed yet |
+| First-guess model for people with no baseline: the fatigue index, pauses relative to the person's own pace, and a comparison that predicts each panel person as a stranger (`analysis/first_guess.py`, `analysis/compare_first_guess.py`, with changes to `features.py` and `model.py`) | Claude Code | all of it | not reviewed yet |
 
 ## What we wrote or decided ourselves
 

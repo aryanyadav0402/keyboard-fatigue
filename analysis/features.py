@@ -29,12 +29,14 @@ PREFIX = {"rule": "vt_", "plain": "pt_", "free": "ft_"}
 BASELINE_CHECKINS = 2
 SLEEP_RESET_MIN = 60  # sleeping at least this long since the last check-in resets hours awake
 MIN_REACTIONS = 3  # the app's 20-second reaction test gives only about 6-9 trials
+PAUSE_RELATIVE = 3  # a "relative pause" is a gap longer than 3 times the person's own median gap
 LOWERCASE_AND_SPACE = frozenset("abcdefghijklmnopqrstuvwxyz ")
 
 # Features that get a change-from-baseline (_dev) version, when present.
 RELATIVE = [
     "vt_wpm", "vt_start_latency", "vt_gap_med", "vt_gap_cv", "vt_pause500_share", "vt_pause1s_share",
     "vt_hold_med", "vt_hold_iqr", "vt_rollover_share", "vt_accuracy", "vt_rule_cost", "vt_shift_lead_med",
+    "vt_pause_rel_share",
     "pt_wpm", "pt_gap_med", "pt_gap_cv", "pt_pause1s_share", "pt_hold_med", "pt_accuracy",
     "ft_word_gap_med", "ft_pause1s_share", "ft_pause2s_share", "ft_longest_gap",
     "wpm_ratio", "gap_ratio", "cv_ratio", "acc_diff",
@@ -121,9 +123,12 @@ def typing_features(presses: pd.DataFrame, typed: str, expected: str | None, sou
         out.update(gap_med=med, gap_iqr=iqr(ordinary), gap_cv=iqr(ordinary) / med)
     if len(every) >= 5:
         every = np.asarray(every)
+        own_pace = float(np.median(ordinary)) if len(ordinary) >= 5 else float(np.median(every))
         out.update(gap_all_med=float(np.median(every)), pause500_share=float(np.mean(every > 500)),
                    pause1s_share=float(np.mean(every > 1000)), longest_gap=float(every.max()),
-                   rollover_share=float(np.mean(rollover)))
+                   rollover_share=float(np.mean(rollover)),
+                   # pauses relative to their own pace, so a slow but steady typist isn't counted as pausing
+                   pause_rel_share=float(np.mean(every > PAUSE_RELATIVE * own_pace)))
 
     letters = chars[chars.key.str.len().eq(1) & chars.key.str.isalpha()]
     holds = (letters.up_ms - letters.down_ms).dropna()

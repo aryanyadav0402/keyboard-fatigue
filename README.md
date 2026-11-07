@@ -140,6 +140,7 @@ Errors come back with an `error` message: 400 if the body isn't JSON, and 422 if
 - **Models:** ridge regression predicts each person's change in KSS from their own first two check-ins, using 6 typing features: the vowel rule's cost, backspaces, accuracy, rhythm unevenness, long pauses and key hold time. Predictions use typing only, because the demo can't ask how long someone has been awake. Every person is predicted by a model trained on everyone else, and a logistic regression separates tired check-ins from alert ones.
 - **The clock as a benchmark:** we compare typing alone with the clock alone. The clock is hours awake when the app records a wake-up time, and otherwise hours since the person's first check-in. Over one night, practice, tiredness and the clock all drift together, so a clock check also tests whether typing adds anything to the clock, by shuffling the typing features within each person.
 - **Rule types:** some of the app's five rules are harder than others, so each Task 1 feature is first measured against the panel's typical value for that rule. Rule cost and accuracy are divided by it, so 1.0 means normal for that rule.
+- **First guess for strangers:** someone with no baseline, such as a judge, gets the fatigue index (`first_guess.py`). It takes five features from their one attempt (the rule's cost, rhythm unevenness, pauses relative to their own pace, backspaces and accuracy), scores each against the panel, averages them with directions fixed in advance, and turns the result into KSS with two numbers fitted on the panel. `compare_first_guess.py` predicts each panel person as if they were a stranger, to compare it with the alternatives. On six simulated nights it was the most accurate for walk-ups (an error of 1.63 KSS points, against 2.26 for guessing the average), and the only option that did no worse than guessing when there was nothing to find.
 
 | File | What it does |
 |---|---|
@@ -148,6 +149,8 @@ Errors come back with an `error` message: 400 if the body isn't JSON, and 422 if
 | `features.py` | One row of features per check-in |
 | `export_features.py` | Writes just the raw and processed feature files |
 | `model.py` | Models and their evaluation |
+| `first_guess.py` | The fatigue index, the first guess for people with no baseline |
+| `compare_first_guess.py` | Compares first-guess models, predicting each panel person as a stranger |
 | `report.py` | The report, figures and predictions |
 | `serve.py` | Live predictions as JSON for the dashboard |
 | `run_all.py`, `predict_latest.py`, `simulate.py` | The commands above |

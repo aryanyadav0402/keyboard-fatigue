@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from first_guess import FIRST_GUESS
+
 from features import (add_clock, adjust_for_rule_type, add_hours_awake, build_features, hours_awake, processed_table, pvt_features,
                       raw_table, typing_features)
 from demo import BadSession, get_best, score_session
@@ -280,7 +282,7 @@ def test_demo_keeps_each_users_best_attempt_and_compares_with_it(night, tmp_path
     assert first["model"] == "no-baseline model" and 1 <= first["score"] <= 9
     assert first["label"] and first["level"] in ("alert", "getting tired", "tired")
     assert first["best"]["attempts"] == 1 and first["best"]["new_best"] and first["scaled_features"] is None
-    assert set(first["model_inputs"]) == {"vt_rule_cost_adj", "vt_gap_cv_adj", "vt_accuracy_adj", "backspace_per100_adj"}
+    assert set(first["model_inputs"]) == set(FIRST_GUESS)
     again = score_session(body, train, db)  # typing exactly like the best attempt
     assert again["model"] == "best-attempt model" and again["score"] == first["score"]
     assert again["best"]["attempts"] == 2 and not again["best"]["new_best"]

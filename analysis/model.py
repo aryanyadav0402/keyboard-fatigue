@@ -31,6 +31,8 @@ from sklearn.model_selection import LeaveOneGroupOut, permutation_test_score
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
+from first_guess import FIRST_GUESS, FatigueIndex
+
 ALPHAS = np.logspace(-2, 3, 30)
 # The 6 typing features picked on 7 Nov, before any real results (free-text thinking pauses were
 # dropped because the app has no free-text task); no feature selection happens on
@@ -41,7 +43,7 @@ TYPING = ["vt_rule_cost_dev", "backspace_per100_adj", "vt_accuracy_dev", "vt_gap
 RULE = ["vt_rule_cost_dev"]
 RT = ["rt_speed_dev"]  # the reaction test, for one comparison row; 20 s gives too few lapses to count
 CLOCK = ["hours_rel"]  # the clock relative to the baseline check-ins: a benchmark, never a prediction input
-EXTERNAL = ["vt_rule_cost_adj", "vt_gap_cv_adj", "vt_accuracy_adj", "backspace_per100_adj"]  # need no baseline
+EXTERNAL = FIRST_GUESS  # need no baseline: see first_guess.py
 MAIN = "Typing only (main)"
 MIN_PEOPLE, MIN_CHECKINS, MIN_PER_PERSON = 3, 15, 3
 MIXED = {
@@ -244,12 +246,12 @@ def sleep_pairs(f: pd.DataFrame, min_slept: float = 60) -> pd.DataFrame:
 
 
 def no_baseline_model(f: pd.DataFrame):
-    """A model on features that need no baseline, for people with too few check-ins."""
+    """The fatigue index (first_guess.py), for people with no baseline, such as judges trying the demo."""
     panel = f[f.participant_type.eq("panel") & f.kss.notna()]
     feats = present(panel, EXTERNAL)
     if len(panel) < MIN_CHECKINS or not feats:
         return None, feats
-    return ridge().fit(panel[feats].to_numpy(float), panel.kss.to_numpy(float)), feats
+    return FatigueIndex(feats).fit(panel[feats].to_numpy(float), panel.kss.to_numpy(float)), feats
 
 
 def external_test(f: pd.DataFrame) -> dict | None:
