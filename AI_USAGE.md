@@ -23,4 +23,6 @@ Keep this current while building, and copy it into the submission. The event's C
 
 ## Frameworks and public code
 
--
+- pandas, NumPy, SciPy, scikit-learn and statsmodels (BSD 3-Clause licence), Matplotlib (Matplotlib licence) and pytest (MIT licence), for the analysis
+- uv (MIT or Apache 2.0 licence), to manage the Python environment
+- The Karolinska Sleepiness Scale and the 3-minute reaction-time test (PVT-B), published research methods used by the check-in app
