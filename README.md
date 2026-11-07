@@ -125,6 +125,7 @@ The reply has:
 - `label`: the KSS wording for that score, such as "Some signs of sleepiness"
 - `level`: `alert` (KSS 1–5), `getting tired` (6) or `tired` (7–9), matching the label
 - `model` and `note`: `best-attempt model` (compared with their best), `no-baseline model` (a first guess) or `not enough data yet`, with a sentence the page can show
+- `fatigue_index`: how this attempt compares with the team's check-ins, for the `no-baseline model` case, where it should be the headline rather than `score`. It holds `percentile` (their typing looks more tired than this percentage of the team's check-ins), a ready-made `text` sentence, `value` (0 = typical, higher = more tired-looking) and `drivers`, the five features, biggest effect first. Each driver has `label` (such as "pauses" or "uneven rhythm"), `pushes` ("more tired" or "less tired") and `strength` ("clearly", "a bit" or "about typical"). `z`, `you` and `typical` are the numbers behind them, adjusted for the rule type. The field is `null` until the team data is enough.
 - `features`: what was measured from this typing, such as wpm, rule cost, rhythm unevenness, accuracy and backspaces
 - `scaled_features`: each feature divided by the same feature in their best attempt, so 1.2 means 20% higher than at their best; `null` on a first attempt
 - `best`: their best so far after this attempt: `score`, `attempts`, `new_best` (true if this attempt just became the best) and `best_at`

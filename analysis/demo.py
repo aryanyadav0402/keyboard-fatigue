@@ -37,6 +37,7 @@ import numpy as np
 import pandas as pd
 
 from features import build_features
+from first_guess import describe
 from load_data import Tables, normalise_name, parse_session
 from model import display_models
 from tasks import apply_rule
@@ -255,6 +256,11 @@ def score_session(body: dict, train: Tables, db_path: str | Path | None = None) 
         best_raw = best["features"].get("raw", {})
         scaled = {label: (round(value / best_raw[label], 3) if value is not None and best_raw.get(label) else None)
                   for label, value in shown.items()}
+    index_info = None  # how this attempt compares with the panel's check-ins, shown to people with no baseline
+    if m["fallback"] is not None:
+        panel = f[f.participant_type.eq("panel") & f.kss.notna()]
+        cols = m["fallback_cols"]
+        index_info = describe(m["fallback"], panel[cols].to_numpy(float), row[cols].to_numpy(float))
     same_rule = f[f.participant_type.eq("panel") & f.question_type.eq(row.question_type)]
     rounded = None if score is None else round(score, 1)
     kss = None if score is None else int(np.clip(round(score), 1, 9))
@@ -265,6 +271,7 @@ def score_session(body: dict, train: Tables, db_path: str | Path | None = None) 
         "level": None if kss is None else "alert" if kss <= 5 else "getting tired" if kss == 6 else "tired",
         "model": model_name,
         "note": NOTES[model_name].format(best=best["score"] if best else 0),
+        "fatigue_index": index_info,
         "username": username,
         "rule": row.question_type,
         "features": shown,

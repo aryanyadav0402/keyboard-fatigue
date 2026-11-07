@@ -22,6 +22,7 @@ Keep this current while building, and copy it into the submission. The event's C
 | Live prediction service for the dashboard: watches the check-in folder and serves JSON (`analysis/serve.py`, with shared prediction code in `model.py` and `predict_latest.py`) | Claude Code | all of it | not reviewed yet |
 | Demo scoring: POST /api/score keeps each user's best attempt in SQLite and compares later attempts with it, plus GET /api/best (`analysis/demo.py`, `analysis/serve.py`) | Claude Code | all of it | not reviewed yet |
 | First-guess model for people with no baseline: the fatigue index, pauses relative to the person's own pace, and a comparison that predicts each panel person as a stranger (`analysis/first_guess.py`, `analysis/compare_first_guess.py`, with changes to `features.py` and `model.py`) | Claude Code | all of it | not reviewed yet |
+| The fatigue index as the demo's headline for people with no baseline: a percentile against the team's check-ins and what drove it (`fatigue_index` in `POST /api/score`, `describe` in `analysis/first_guess.py`) | Claude Code | all of it | not reviewed yet |
 
 ## What we wrote or decided ourselves
 

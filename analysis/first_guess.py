@@ -29,6 +29,13 @@ DIRECTIONS = {
 }
 FIRST_GUESS = list(DIRECTIONS)
 Z_LIMIT = 4  # one wild feature shouldn't decide the score
+LABELS = {  # for showing people what drove their index
+    "vt_rule_cost_adj": "slowdown from the rule",
+    "vt_gap_cv_adj": "uneven rhythm",
+    "vt_pause_rel_share_adj": "pauses",
+    "backspace_per100_adj": "corrections",
+    "vt_accuracy_adj": "accuracy",
+}
 
 
 class FatigueIndex:
@@ -58,9 +65,13 @@ class FatigueIndex:
                 self.intercept_ = float(y[ok].mean())
         return self
 
+    def contributions(self, X) -> np.ndarray:
+        """Each feature's signed, capped z-score: above 0 pushes the index towards more tired."""
+        return np.clip((np.asarray(X, float) - self.center_) / self.scale_ * self.signs_, -Z_LIMIT, Z_LIMIT)
+
     def index(self, X) -> np.ndarray:
         """The fatigue index: 0 is the panel's typical attempt, higher is more tired-looking."""
-        z = np.clip((np.asarray(X, float) - self.center_) / self.scale_ * self.signs_, -Z_LIMIT, Z_LIMIT)
+        z = self.contributions(X)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)  # a row with nothing measured gives NaN
             index = np.nanmean(z, axis=1)  # features that couldn't be measured are skipped
@@ -69,3 +80,34 @@ class FatigueIndex:
     def predict(self, X) -> np.ndarray:
         index = np.nan_to_num(self.index(X))  # nothing measurable: treat as a typical attempt
         return self.intercept_ + self.slope_ * index
+
+
+def describe(model: FatigueIndex, panel_X, x) -> dict | None:
+    """One attempt's fatigue index as a percentile of the panel's check-ins, with what drove it.
+
+    This is what the demo shows someone with no baseline: how their typing compares with the team's
+    check-ins over a night, rather than a tiredness rating converted from a handful of people.
+    """
+    x = np.asarray(x, float).reshape(1, -1)
+    value = model.index(x)[0]
+    panel = model.index(np.asarray(panel_X, float))
+    panel = panel[~np.isnan(panel)]
+    if np.isnan(value) or len(panel) == 0:
+        return None
+    percentile = int(round(100 * float(np.mean(panel < value))))
+    drivers = []
+    for col, z, you, typical in zip(model.columns, model.contributions(x)[0], x[0], model.center_):
+        if np.isnan(z):
+            continue  # this feature couldn't be measured in the attempt
+        drivers.append({"feature": col, "label": LABELS.get(col, col), "z": round(float(z), 2),
+                        "pushes": "more tired" if z > 0 else "less tired" if z < 0 else "neither way",
+                        "strength": "clearly" if abs(z) >= 1.5 else "a bit" if abs(z) >= 0.5 else "about typical",
+                        "you": round(float(you), 3), "typical": round(float(typical), 3)})
+    drivers.sort(key=lambda d: -abs(d["z"]))
+    return {
+        "value": round(float(value), 2),
+        "percentile": percentile,
+        "text": f"Your typing looks more tired than {percentile}% of check-ins from our team's all-nighter.",
+        "panel_checkins": int(len(panel)),
+        "drivers": drivers,
+    }

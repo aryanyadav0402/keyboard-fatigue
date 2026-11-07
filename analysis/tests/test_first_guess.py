@@ -5,8 +5,9 @@ import pandas as pd
 import pytest
 
 from compare_first_guess import CANDIDATES, compare
+from demo import score_session
 from features import build_features, typing_features
-from first_guess import FIRST_GUESS, FatigueIndex
+from first_guess import FIRST_GUESS, LABELS, FatigueIndex, describe
 from load_data import load_sessions
 from model import no_baseline_model
 from simulate import make_people, make_schedule, make_session, make_states
@@ -72,3 +73,42 @@ def test_comparison_predicts_each_panel_person_as_a_stranger(night):
     assert list(table.index) == list(CANDIDATES)
     assert table.loc["Fatigue index, 5 features", "MAE"] <= table.loc["Always guess the panel average", "MAE"] + 0.05
     assert table["Walk-up MAE"].notna().all()
+
+
+def test_describe_ranks_an_attempt_against_the_panel_and_explains_it():
+    rng = np.random.default_rng(2)
+    X = rng.normal(size=(100, len(FIRST_GUESS)))
+    signs = np.array([1, 1, 1, 1, -1])
+    model = FatigueIndex(FIRST_GUESS).fit(X, 5 + (X * signs).mean(axis=1) * 2)
+    typical = describe(model, X, model.center_)
+    tired = describe(model, X, model.center_ + 1.5 * model.scale_ * signs)
+    assert 40 <= typical["percentile"] <= 60 and tired["percentile"] >= 90
+    assert "more tired than" in tired["text"] and tired["panel_checkins"] == 100
+    assert [d["label"] for d in tired["drivers"]] and all(d["label"] in LABELS.values() for d in tired["drivers"])
+    assert all(d["pushes"] == "more tired" for d in tired["drivers"])
+    sizes = [abs(d["z"]) for d in tired["drivers"]]
+    assert sizes == sorted(sizes, reverse=True)
+    # an attempt where nothing could be measured has no index
+    assert describe(model, X, np.full(len(FIRST_GUESS), np.nan)) is None
+
+
+def demo_body(folder, username=None):
+    """The short form the demo page sends, from the first simulated session in folder."""
+    session = json.loads(sorted(folder.glob("*.json"))[0].read_text())
+    unit = session["units"][0]
+    keys = [{"type": "down" if k[2] == "d" else "up", "key": k[5], "code": k[4], "t": k[3]}
+            for k in session["keys"] if k[0] == 0]
+    return {"username": username, "sentence": unit["source"], "rule": unit["question_type"],
+            "typed": unit["typed"], "shown_at": unit["t_shown"], "keys": keys}
+
+
+def test_demo_reply_includes_the_fatigue_index(night, tmp_path):
+    train, db = load_sessions(night), tmp_path / "demo.sqlite"
+    first = score_session(demo_body(night, "a judge"), train, db)
+    assert first["model"] == "no-baseline model"
+    info = first["fatigue_index"]
+    assert 0 <= info["percentile"] <= 100 and info["text"].startswith("Your typing looks more tired than")
+    assert {d["feature"] for d in info["drivers"]} <= set(FIRST_GUESS) and info["drivers"]
+    json.dumps(first, allow_nan=False)
+    again = score_session(demo_body(night, "a judge"), train, db)  # compared with their best now
+    assert again["model"] == "best-attempt model" and again["fatigue_index"]["percentile"] == info["percentile"]
