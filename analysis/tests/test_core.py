@@ -7,7 +7,8 @@ import pytest
 
 from features import (add_clock, adjust_for_rule_type, add_hours_awake, build_features, hours_awake, processed_table, pvt_features,
                       raw_table, typing_features)
-from load_data import load_sessions, pair_presses
+from demo import BadSession, get_best, score_session
+from load_data import empty_tables, load_sessions, pair_presses
 from model import add_flags, run_models
 from report import write_outputs
 from serve import Feed, build_payloads, make_handler
@@ -237,3 +238,96 @@ def test_the_api_answers_with_cors(few_sessions):
     finally:
         server.shutdown()
     assert body["nap_at"] == 7 and len(body["people"]) == 1
+
+
+@pytest.fixture(scope="module")
+def night(tmp_path_factory):
+    """A simulated night in the app's format: 7 teammates and 20 walk-ups."""
+    folder = tmp_path_factory.mktemp("night")
+    rng, world = np.random.default_rng(3), np.random.default_rng(4)
+    for p in make_people(rng):
+        times, sleep = make_schedule(rng, p)
+        for st in make_states(rng, p, times, sleep):
+            session = make_session(world, p, st, effect=True)
+            (folder / f"{session['session_id']}.json").write_text(json.dumps(session))
+    return folder
+
+
+def demo_body(session, name=None):
+    """The short form the demo page sends, built from a simulated session's typing."""
+    unit = session["units"][0]
+    keys = [{"type": "down" if k[2] == "d" else "up", "key": k[5], "code": k[4], "t": k[3]}
+            for k in session["keys"] if k[0] == 0]
+    return {"name": name, "sentence": unit["source"], "rule": unit["question_type"], "typed": unit["typed"],
+            "shown_at": unit["t_shown"], "keys": keys}
+
+
+def a_session(folder):
+    return json.loads(sorted(folder.glob("*.json"))[0].read_text())
+
+
+def test_demo_score_before_any_team_data_still_returns_features(few_sessions):
+    result = score_session(demo_body(a_session(few_sessions)), empty_tables())
+    assert result["score"] is None and result["model"] == "not enough data yet"
+    assert result["features"]["rule_cost"] > 1 and 0 < result["features"]["accuracy"] <= 1
+    assert result["saved_as_training_data"] is False and result["best"] is None
+
+
+def test_demo_keeps_each_users_best_attempt_and_compares_with_it(night, tmp_path):
+    train, db = load_sessions(night), tmp_path / "demo.sqlite"
+    body = dict(demo_body(a_session(night)), username="Zoe O'Neil")
+    first = score_session(body, train, db)
+    assert first["model"] == "no-baseline model" and 1 <= first["score"] <= 9
+    assert first["label"] and first["level"] in ("alert", "getting tired", "tired")
+    assert first["best"]["attempts"] == 1 and first["best"]["new_best"] and first["scaled_features"] is None
+    assert set(first["model_inputs"]) == {"vt_rule_cost_adj", "vt_gap_cv_adj", "vt_accuracy_adj", "backspace_per100_adj"}
+    again = score_session(body, train, db)  # typing exactly like the best attempt
+    assert again["model"] == "best-attempt model" and again["score"] == first["score"]
+    assert again["best"]["attempts"] == 2 and not again["best"]["new_best"]
+    assert all(v == pytest.approx(1) for v in again["scaled_features"].values() if v is not None)
+    assert get_best(db, "ZOE-ONEIL")["attempts"] == 2  # the username is matched however it's typed
+    anonymous = score_session(demo_body(a_session(night)), train, db)
+    assert anonymous["best"] is None and anonymous["model"] == "no-baseline model"
+
+
+def test_demo_score_rejects_sessions_it_cannot_score():
+    with pytest.raises(BadSession):
+        score_session({"sentence": "a cat", "keys": []}, empty_tables())
+    with pytest.raises(BadSession):
+        score_session({"sentence": "a cat", "keys": [{"type": "down", "key": "a", "t": 1}]}, empty_tables())
+
+
+def test_post_score_keeps_the_best_attempt_without_touching_checkin_files(night, tmp_path):
+    import threading
+    import urllib.error
+    import urllib.request
+    from http.server import ThreadingHTTPServer
+
+    before = sorted(p.name for p in night.rglob("*"))
+    feed = Feed(night)
+    feed.refresh_if_changed()
+    server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(feed, tmp_path / "demo.sqlite"))
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{server.server_address[1]}"
+
+    def call(path: str, data: bytes | None = None):
+        request = urllib.request.Request(base + path, data=data, headers={"Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(request) as response:
+                return response.status, json.load(response)
+        except urllib.error.HTTPError as err:
+            return err.code, json.load(err)
+
+    try:
+        unknown = call("/api/best/zoe")
+        ok = call("/api/score", json.dumps(dict(demo_body(a_session(night)), username="zoe")).encode())
+        best = call("/api/best/Zoe")
+        not_json = call("/api/score", b"{oops")
+        too_little = call("/api/score", json.dumps({"sentence": "a cat", "keys": [{"type": "down", "key": "a", "t": 1}]}).encode())
+    finally:
+        server.shutdown()
+    assert unknown[0] == 404
+    assert ok[0] == 200 and 1 <= ok[1]["score"] <= 9 and ok[1]["saved_as_training_data"] is False
+    assert best[0] == 200 and best[1]["attempts"] == 1 and best[1]["score"] == ok[1]["score"]
+    assert not_json[0] == 400 and too_little[0] == 422
+    assert sorted(p.name for p in night.rglob("*")) == before  # no check-in files were written

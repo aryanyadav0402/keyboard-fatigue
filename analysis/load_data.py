@@ -12,6 +12,7 @@ Each check-in is one JSON file. load_sessions() reads every *.json under a folde
 import json
 import math
 import re
+import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -73,8 +74,20 @@ def focus_losses(ui: list, start: float, end: float | None) -> int:
                if start <= t <= end and ("blur" in str(event) or "hidden" in str(event)))
 
 
+def normalise_name(name: str) -> str:
+    """The check-in app's ID for a typed name: accents dropped, spaces to dashes, upper case
+    (Zoë O'Neil -> ZOE-ONEIL)."""
+    plain = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
+    plain = re.sub(r"[^A-Za-z0-9 \-]", "", plain).strip()
+    return re.sub(r"\s+", "-", plain).upper()
+
+
 def read_session(path: Path) -> dict:
-    d = json.loads(path.read_text())
+    return parse_session(json.loads(path.read_text()), path.name)
+
+
+def parse_session(d: dict, source_name: str = "session") -> dict:
+    """One session (as the app saves it) as rows for the session, unit, key and reaction-test tables."""
     if d.get("schema") != "typing-station":
         raise ValueError("not a typing-station session file")
     cid = d["session_id"]
@@ -89,7 +102,7 @@ def read_session(path: Path) -> dict:
         "person": str(d.get("participant_id") or "").strip(),
         "cohort": cohort,
         "participant_type": "panel" if cohort.lower() in PANEL_COHORTS else "oneoff",
-        "file": path.name,
+        "file": source_name,
         "status": str(d.get("status") or "final"),
         "timestamp": timestamp,
         "epoch_ms": clock.get("start_epoch_ms"),
@@ -117,7 +130,7 @@ def read_session(path: Path) -> dict:
             computed = apply_rule(question_type, source)
             if computed is not None:
                 if expected is not None and expected != computed:
-                    problems.append(f"{path.name}: the app's expected answer for '{source}' breaks the {question_type} rule")
+                    problems.append(f"{source_name}: the app's expected answer for '{source}' breaks the {question_type} rule")
                 expected = computed  # recompute rather than trust a stored answer
         elif name == "plain" and source:
             expected = source
@@ -185,3 +198,11 @@ def load_sessions(folder: str | Path) -> Tables:
         skipped_test_runs=skipped_tests,
         skipped_partial=skipped_partial,
     )
+
+
+def empty_tables() -> Tables:
+    """Tables with no check-ins, for before any data has loaded."""
+    return Tables(sessions=pd.DataFrame(columns=["checkin_id", "person", "participant_type"]),
+                  units=pd.DataFrame(columns=["checkin_id", "task_idx", "unit", "task"]),
+                  keys=pd.DataFrame(columns=["checkin_id", "task_idx", "unit", "key"]),
+                  pvt=pd.DataFrame(columns=["checkin_id", "phase", "rt_ms", "outcome"]))

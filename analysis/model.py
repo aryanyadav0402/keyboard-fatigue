@@ -291,6 +291,26 @@ def run_models(f: pd.DataFrame, n_perm: int = 500, seed: int = 0) -> dict:
 NAP_AT, PUSH_WARNING_AT, KEEP_AWAKE = 7, 8, 2
 
 
+def display_models(f: pd.DataFrame) -> dict:
+    """Models trained on all panel data, for live scores rather than evaluation.
+
+    main: typing-only, predicts the change in KSS from a change in typing (None until there's
+    enough data). classifier: tired vs alert on the same inputs. fallback: the no-baseline model.
+    """
+    d = scored(f)
+    typing = present(d, TYPING)  # no hours awake: the demo can't ask for it
+    main = classifier = None
+    if typing and not missing_data(d):
+        X = d[typing].to_numpy(float)
+        main = ridge().fit(X, d.kss_delta.to_numpy(float))
+        tired = tired_labels(d)
+        if len(np.unique(tired)) == 2:
+            classifier = logistic().fit(X, tired)
+    fallback, fallback_cols = no_baseline_model(f)
+    return {"main": main, "classifier": classifier, "typing": typing,
+            "fallback": fallback, "fallback_cols": fallback_cols}
+
+
 def all_predictions(f: pd.DataFrame) -> pd.DataFrame:
     """Predicted KSS for every check-in, from models trained on all panel data, for the dashboard.
 
@@ -304,22 +324,17 @@ def all_predictions(f: pd.DataFrame) -> pd.DataFrame:
         out[col] = f[col] if col in f else None
     pred, prob = np.full(len(f), np.nan), np.full(len(f), np.nan)
     source = np.full(len(f), "not enough data yet", dtype=object)
-    d = scored(f)
-    typing = present(d, TYPING)  # no hours awake: the demo can't ask for it
-    if typing and not missing_data(d):
-        main = ridge().fit(d[typing].to_numpy(float), d.kss_delta.to_numpy(float))
-        use = (f.participant_type.eq("panel") & f.kss_base.notna()).to_numpy()
-        if use.any():
-            X = f.loc[use, typing].to_numpy(float)
-            pred[use] = main.predict(X) + f.loc[use, "kss_base"].to_numpy(float)
-            source[use] = "panel model"
-            tired = tired_labels(d)
-            if len(np.unique(tired)) == 2:
-                prob[use] = logistic().fit(d[typing].to_numpy(float), tired).predict_proba(X)[:, 1]
-    fallback, fallback_cols = no_baseline_model(f)
+    m = display_models(f)
+    use = (f.participant_type.eq("panel") & f.kss_base.notna()).to_numpy()
+    if m["main"] is not None and use.any():
+        X = f.loc[use, m["typing"]].to_numpy(float)
+        pred[use] = m["main"].predict(X) + f.loc[use, "kss_base"].to_numpy(float)
+        source[use] = "panel model"
+        if m["classifier"] is not None:
+            prob[use] = m["classifier"].predict_proba(X)[:, 1]
     rest = np.isnan(pred)
-    if fallback is not None and rest.any():
-        pred[rest] = fallback.predict(f.loc[rest, fallback_cols].to_numpy(float))
+    if m["fallback"] is not None and rest.any():
+        pred[rest] = m["fallback"].predict(f.loc[rest, m["fallback_cols"]].to_numpy(float))
         source[rest] = "no-baseline model"
     out["tiredness_pred"] = np.clip(pred, 1, 9)
     out["tired_prob"] = prob

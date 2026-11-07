@@ -60,6 +60,8 @@ uv run python serve.py --data /path/to/typing_station/data/sessions
 | `GET /api/history` | Every check-in with `checkin_id`, `person`, `timestamp`, `kss_reported`, `tiredness_pred`, `tired_prob`, `model`, `is_baseline` and `question_type`, for charts over the night |
 | `GET /api/checkin/<checkin_id>` | One check-in, for showing someone their score right after they finish. It returns 404 for a few seconds until the check-in is scored. |
 | `GET /api/status` | How many check-ins and people there are, whether the model is ready, and what's missing if it isn't |
+| `POST /api/score` | Scores one attempt from the demo page, compared with that user's best attempt (see below) |
+| `GET /api/best/<username>` | A demo user's best attempt so far |
 
 It answers on `http://localhost:8765` by default, with CORS headers so a dashboard on another address can read it. `--host 0.0.0.0` shares it with other laptops on the same Wi-Fi, and `cloudflared tunnel --url http://localhost:8765` gives a public HTTPS link, for example for a dashboard on Vercel. After each update it also writes `status.json`, `latest.json` and `history.json` to `results/live/`.
 
@@ -69,6 +71,68 @@ It answers on `http://localhost:8765` by default, with CORS headers so a dashboa
 - `not enough data yet`: the model needs 3 teammates with 3 check-ins each beyond their first two, and 15 in total, so `tiredness_pred` is empty
 
 These live predictions come from a model trained on everyone, so they look better than the honest numbers in the report, where each person is predicted by a model that never saw them.
+
+### Scoring the demo page: `POST /api/score`
+
+On the demo page, someone types one sentence with a rule and is told how tired they are. The page posts that typing to `POST /api/score` with a username and gets a score straight back:
+
+- **First attempt:** a first guess from the no-baseline model. That attempt is kept as the user's best.
+- **Later attempts:** compared with their best. The model scores how much more tired the typing looks than at their best, and adds that to their best score. Typing just like their best gives the same score, and a more alert attempt becomes the new best.
+
+Only each user's best attempt is stored (its score and features, never keystrokes), in a small SQLite file: `results/demo_users.sqlite`, or wherever `--db` points. Demo attempts never become training data; only the check-in app's files are used for training. `GET /api/best/<username>` returns a user's best so far, or 404 before their first attempt.
+
+Send:
+
+```json
+{
+  "username": "Zoe O'Neil",
+  "sentence": "a curious raccoon found a shiny golden key",
+  "rule": "capitalize_vowels",
+  "typed": "A cUrIOUs rAccOOn fOUnd A shIny gOldEn kEy",
+  "shown_at": 1532.4,
+  "keys": [
+    {"type": "down", "key": "Shift", "code": "ShiftLeft", "t": 1840.2},
+    {"type": "down", "key": "A", "code": "KeyA", "t": 2011.7},
+    {"type": "up", "key": "A", "code": "KeyA", "t": 2090.3}
+  ]
+}
+```
+
+- `username` is matched however it's typed, so `Zoe` and `zoe` are the same user. Without it, every attempt gets a first guess and nothing is stored.
+- `rule` defaults to `capitalize_vowels`, and any of the app's five rules works.
+- `shown_at` is `performance.now()` when the sentence appeared, and each key's `t` is the browser's `event.timeStamp`.
+- `reaction_times_ms`, a list of numbers, is optional.
+
+Recording the keys on the page:
+
+```js
+const keys = [];
+const shownAt = performance.now();
+box.addEventListener("keydown", e => { if (!e.repeat) keys.push({ type: "down", key: e.key, code: e.code, t: e.timeStamp }); });
+box.addEventListener("keyup", e => keys.push({ type: "up", key: e.key, code: e.code, t: e.timeStamp }));
+
+// when they finish:
+const response = await fetch("http://localhost:8765/api/score", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ username, sentence, rule: "capitalize_vowels", typed: box.value, shown_at: shownAt, keys }),
+});
+const result = await response.json();
+```
+
+The reply has:
+- `score`: tiredness on the KSS from 1 to 9, or `null` if the team data isn't enough yet
+- `label`: the KSS wording for that score, such as "Some signs of sleepiness"
+- `level`: `alert` (KSS 1–5), `getting tired` (6) or `tired` (7–9), matching the label
+- `model` and `note`: `best-attempt model` (compared with their best), `no-baseline model` (a first guess) or `not enough data yet`, with a sentence the page can show
+- `features`: what was measured from this typing, such as wpm, rule cost, rhythm unevenness, accuracy and backspaces
+- `scaled_features`: each feature divided by the same feature in their best attempt, so 1.2 means 20% higher than at their best; `null` on a first attempt
+- `best`: their best so far after this attempt: `score`, `attempts`, `new_best` (true if this attempt just became the best) and `best_at`
+- `typical_for_this_rule`: the team's typical value for the same features and rule, for "you vs typical"
+- `model_inputs`: the exact numbers the model used
+- `saved_as_training_data`: always `false`
+
+Errors come back with an `error` message: 400 if the body isn't JSON, and 422 if there isn't enough typing to score (fewer than 5 key presses in the sentence).
 
 ## What the analysis does
 

@@ -10,8 +10,11 @@ changes. The JSON has CORS headers, so a dashboard served from another address c
   GET /api/latest              each person's latest check-in: predicted and rated KSS, nap and push flags
   GET /api/history             every check-in with rated and predicted KSS, for charts over the night
   GET /api/checkin/<id>        one check-in, for showing someone their score right after they finish
+  POST /api/score              score one demo attempt sent in the body, compared with that user's best (see demo.py)
+  GET /api/best/<username>     a demo user's best attempt so far
 
 The same JSON is also written to --out (status.json, latest.json, history.json) after every update.
+Demo users' best attempts are kept in --db, a SQLite file; check-in files are never written.
 By default it only answers on this laptop; --host 0.0.0.0 shares it on the local network.
 """
 
@@ -22,42 +25,28 @@ import time
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import unquote
 
-import numpy as np
 import pandas as pd
 
+from demo import BadSession, clean, get_best, score_session
 from features import build_features
-from load_data import load_sessions
+from load_data import Tables, empty_tables, load_sessions, normalise_name
 from model import NAP_AT, PUSH_WARNING_AT, add_flags, all_predictions, missing_data, scored
 
 POLL_SECONDS = 5
-ENDPOINTS = ["/api/status", "/api/latest", "/api/history", "/api/checkin/<checkin_id>"]
-
-
-def clean(value):
-    """Make one value JSON-friendly: NaN becomes null, numpy numbers become plain ones, times become text."""
-    if isinstance(value, str):
-        return value
-    if value is None or pd.isna(value):
-        return None
-    if isinstance(value, pd.Timestamp):
-        return value.isoformat()
-    if isinstance(value, (bool, np.bool_)):
-        return bool(value)
-    if isinstance(value, (int, np.integer)):
-        return int(value)
-    if isinstance(value, (float, np.floating)):
-        return round(float(value), 3)
-    return value
+MAX_BODY_BYTES = 2_000_000
+ENDPOINTS = ["GET /api/status", "GET /api/latest", "GET /api/history", "GET /api/checkin/<checkin_id>",
+             "POST /api/score", "GET /api/best/<username>"]
 
 
 def records(df: pd.DataFrame) -> list[dict]:
     return [{k: clean(v) for k, v in row.items()} for row in df.to_dict("records")]
 
 
-def build_payloads(folder: str | Path) -> dict:
+def build_payloads(folder: str | Path, tables: Tables | None = None) -> dict:
     """Everything the dashboard reads, built from the check-in files in folder."""
-    tables = load_sessions(folder)
+    tables = tables if tables is not None else load_sessions(folder)
     f = build_features(tables)
     now = datetime.now().isoformat(timespec="seconds")
     thresholds = {"nap_at": NAP_AT, "push_warning_at": PUSH_WARNING_AT}
@@ -87,6 +76,7 @@ class Feed:
         self.folder, self.out = Path(folder), Path(out) if out else None
         self.lock = threading.Lock()
         self.signature = None
+        self.tables = empty_tables()  # until the first update
         self.payloads = {"status": {"updated_at": None, "models_ready": False, "missing": ["starting up"]},
                          "latest": {"people": []}, "history": {"checkins": []}}
 
@@ -105,14 +95,15 @@ class Feed:
         if signature == self.signature:
             return False
         try:
-            payloads = build_payloads(self.folder)
+            tables = load_sessions(self.folder)
+            payloads = build_payloads(self.folder, tables)
         except Exception as err:  # keep serving the last good data, and say what went wrong
             with self.lock:
                 self.signature = signature
                 self.payloads["status"]["error"] = f"{type(err).__name__}: {err}"
             raise
         with self.lock:
-            self.signature, self.payloads = signature, payloads
+            self.signature, self.payloads, self.tables = signature, payloads, tables
         if self.out:
             self.out.mkdir(parents=True, exist_ok=True)
             for name, payload in payloads.items():
@@ -134,12 +125,16 @@ class Feed:
         with self.lock:
             return self.payloads[name]
 
+    def training_tables(self) -> Tables:
+        with self.lock:
+            return self.tables
 
-def make_handler(feed: Feed):
+
+def make_handler(feed: Feed, db_path: str | Path | None = None):
     class Handler(BaseHTTPRequestHandler):
         def cors(self) -> None:
             self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
             self.send_header("Access-Control-Allow-Headers", "Content-Type")
 
         def send_json(self, code: int, payload) -> None:
@@ -161,6 +156,13 @@ def make_handler(feed: Feed):
             path = self.path.split("?", 1)[0].rstrip("/")
             if path in ("/api/status", "/api/latest", "/api/history"):
                 return self.send_json(200, feed.get(path.rsplit("/", 1)[1]))
+            if path.startswith("/api/best/"):
+                best = get_best(db_path, normalise_name(unquote(path.rsplit("/", 1)[1])))
+                if best is None:
+                    return self.send_json(404, {"error": "no attempts stored for that username yet"})
+                return self.send_json(200, {"username": best["username"], "score": round(best["score"], 1),
+                                            "attempts": best["attempts"], "best_at": best["best_at"],
+                                            "rule": best["rule"], "features": best["features"].get("raw")})
             if path.startswith("/api/checkin/"):
                 checkin_id = path.rsplit("/", 1)[1]
                 found = [c for c in feed.get("history")["checkins"] if c["checkin_id"] == checkin_id]
@@ -170,6 +172,24 @@ def make_handler(feed: Feed):
             if path in ("", "/api"):
                 return self.send_json(200, {"endpoints": ENDPOINTS})
             self.send_json(404, {"error": "unknown path", "endpoints": ENDPOINTS})
+
+        def do_POST(self) -> None:
+            if self.path.split("?", 1)[0].rstrip("/") != "/api/score":
+                return self.send_json(404, {"error": "unknown path", "endpoints": ENDPOINTS})
+            length = int(self.headers.get("Content-Length") or 0)
+            if length > MAX_BODY_BYTES:
+                return self.send_json(413, {"error": "that session is too large"})
+            try:
+                body = json.loads(self.rfile.read(length) or b"null")
+            except (ValueError, UnicodeDecodeError):
+                return self.send_json(400, {"error": "the body must be JSON"})
+            try:
+                result = score_session(body, feed.training_tables(), db_path)  # only the best attempt is stored
+            except BadSession as err:
+                return self.send_json(422, {"error": str(err)})
+            except Exception as err:
+                return self.send_json(500, {"error": f"{type(err).__name__}: {err}"})
+            self.send_json(200, result)
 
         def log_message(self, *args) -> None:  # keep the console for update messages
             pass
@@ -183,6 +203,7 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--host", default="127.0.0.1", help="0.0.0.0 to share on the local network")
     parser.add_argument("--out", default="results/live", help="also write the JSON here after every update")
+    parser.add_argument("--db", default="results/demo_users.sqlite", help="SQLite file for demo users' best attempts")
     args = parser.parse_args()
 
     feed = Feed(args.data, args.out)
@@ -191,7 +212,7 @@ def main() -> None:
     except Exception as err:
         print(f"First update failed ({type(err).__name__}: {err}); will retry when the folder changes.")
     threading.Thread(target=feed.run_forever, daemon=True).start()
-    server = ThreadingHTTPServer((args.host, args.port), make_handler(feed))
+    server = ThreadingHTTPServer((args.host, args.port), make_handler(feed, args.db))
     shown = "localhost" if args.host in ("127.0.0.1", "localhost") else args.host
     print(f"Serving predictions at http://{shown}:{args.port}/api/latest (Ctrl+C to stop)", flush=True)
     try:
