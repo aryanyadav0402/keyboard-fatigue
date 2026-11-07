@@ -256,8 +256,10 @@ def score_session(body: dict, train: Tables, db_path: str | Path | None = None) 
         best_raw = best["features"].get("raw", {})
         scaled = {label: (round(value / best_raw[label], 3) if value is not None and best_raw.get(label) else None)
                   for label, value in shown.items()}
-    index_info = None  # how this attempt compares with the panel's check-ins, shown to people with no baseline
-    if m["fallback"] is not None:
+    # How this attempt compares with the team's check-ins: only for people with no baseline. Anyone we
+    # have a baseline for is compared only with themselves.
+    index_info = None
+    if model_name == "no-baseline model":
         panel = f[f.participant_type.eq("panel") & f.kss.notna()]
         cols = m["fallback_cols"]
         index_info = describe(m["fallback"], panel[cols].to_numpy(float), row[cols].to_numpy(float))

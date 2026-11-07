@@ -111,4 +111,4 @@ def test_demo_reply_includes_the_fatigue_index(night, tmp_path):
     assert {d["feature"] for d in info["drivers"]} <= set(FIRST_GUESS) and info["drivers"]
     json.dumps(first, allow_nan=False)
     again = score_session(demo_body(night, "a judge"), train, db)  # compared with their best now
-    assert again["model"] == "best-attempt model" and again["fatigue_index"]["percentile"] == info["percentile"]
+    assert again["model"] == "best-attempt model" and again["fatigue_index"] is None  # only themselves
