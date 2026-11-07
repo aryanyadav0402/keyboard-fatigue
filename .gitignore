@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+.vercel/
+node_modules/
+.next/
+dist/
+build/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+.pytest_cache/
+
+# People's keystroke logs stay off GitHub
+data/
