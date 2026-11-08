@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title id="title">tiredtype</title>
+  <rect width="128" height="128" rx="38" fill="#ffddc9"/>
+  <ellipse cx="101" cy="74" rx="14" ry="10" fill="#f3b4ad"/>
+  <ellipse cx="27" cy="74" rx="14" ry="10" fill="#f3b4ad"/>
+  <path fill="none" stroke="#6841aa" stroke-linecap="round" stroke-width="7" d="M29 58c2 11 13 14 20 3M79 61c7 11 18 8 20-3"/>
+  <path fill="none" stroke="#9574d0" stroke-linecap="round" stroke-width="7" d="M48 87c9 7 23 7 32 0"/>
+</svg>
