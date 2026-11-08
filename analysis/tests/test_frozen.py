@@ -54,7 +54,8 @@ def test_teammate_gets_the_personal_model_from_the_first_attempt(night, frozen):
     n = int(path.name.split("_")[1])
     expected = np.clip(row.kss_base + main["main"].predict(row[main["typing"]].to_numpy(float).reshape(1, -1))[0], 1, 9)
     reply = score_attempt(demo_body(night, who, n, username=who.lower()), frozen)  # typed in any case
-    assert reply["model"] == "personal model" and reply["fatigue_index"] is None
+    assert reply["model"] == "best-attempt model" and "last night" in reply["note"]  # the label pages know
+    assert reply["fatigue_index"] is None
     assert reply["score"] == pytest.approx(expected, abs=0.06)
     stranger = score_attempt(demo_body(night, who, n, username="someone new"), frozen)
     assert stranger["model"] == "no-baseline model"

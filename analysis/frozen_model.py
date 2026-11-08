@@ -244,7 +244,9 @@ def score_attempt(body: dict, model: dict, best_reference: dict | None = None) -
         "scale": SCALE,
         "label": label,
         "level": level,
-        "model": model_name,
+        # pages know three labels; a teammate's personal-model score reads like a best-attempt one,
+        # and the note says it's compared with last night's check-ins
+        "model": "best-attempt model" if model_name == "personal model" else model_name,
         "note": NOTES[model_name].format(best=best["score"] if best else 0),
         "fatigue_index": index_info,
         "username": username,
