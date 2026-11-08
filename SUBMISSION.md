@@ -1,11 +1,11 @@
 # keyboard-fatigue: submission draft
 
-Paste each section into the form and edit freely. Fill in the demo page link.
+Paste each section into the form and edit freely.
 
 **Tracks:** G-Research (make the invisible visible), Hudson River Trading (best use of data for predictions and decisions), Metaview (best overall)
 
 **Links**
-- Demo: [Christy's page URL]
+- Demo: https://tiredtype.vercel.app/
 - Scoring API: https://keyboard-fatigue-api.vercel.app
 - Repo: https://github.com/aryanyadav0402/keyboard-fatigue
 
