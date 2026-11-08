@@ -18,6 +18,7 @@ sys.path.insert(0, str(ROOT / "lib"))
 from attempt import BadSession  # noqa: E402
 from frozen_model import check_model, score_attempt  # noqa: E402
 from attempt_store import store_from_env  # noqa: E402
+from ananya_model import KIND as ANANYA, score_ananya  # noqa: E402
 
 MAX_BODY_BYTES = 2_000_000
 STORE = store_from_env()  # the attempt history database, or None when this deployment has none
@@ -70,8 +71,12 @@ class handler(BaseHTTPRequestHandler):
         name = chosen or (body.get("model") if isinstance(body, dict) else None) or DEFAULT
         if name not in MODELS:
             return self.send_json(404, {"error": f"no model called {name!r}", "models": sorted(MODELS)})
-        try:
-            result = score_attempt(body, MODELS[name], store=STORE)  # stores numbers only, never keystrokes
+        model = MODELS[name]
+        try:  # both store numbers only, never keystrokes
+            if model.get("kind") == ANANYA:
+                result = score_ananya(body, model, store=STORE)  # Ananya's per-person model
+            else:
+                result = score_attempt(body, model, store=STORE)
         except BadSession as err:
             return self.send_json(422, {"error": str(err)})
         except Exception as err:

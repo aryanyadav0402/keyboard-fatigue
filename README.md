@@ -143,17 +143,19 @@ curl -X POST -H "Content-Type: application/json" --data @examples/score_request.
 
 ## Hosted scoring for the demo page
 
-The demo page calls a hosted copy of `POST /api/score` at **https://keyboard-fatigue-api.vercel.app**, so it doesn't need this laptop. The API serves frozen models: plain numbers exported from a training run, with no names, timestamps or keystrokes. It retrains nothing, stores nothing and never logs requests.
+The demo page calls a hosted copy of `POST /api/score` at **https://keyboard-fatigue-api.vercel.app**, so it doesn't need this laptop. The API serves frozen models: plain numbers exported from a training run, with no names, timestamps or keystrokes. It retrains nothing and never logs requests. With its database connected, it stores each scored attempt as numbers under a scrambled key for the username, never keystrokes.
 
 | Endpoint | What it does |
 |---|---|
 | `POST /api/score` | Scores one attempt. The request and reply match the local `POST /api/score` above, and the reply adds `best_reference` and `model_version` |
 | `GET /api/models` | Lists the models it serves, which one is the default, what each was trained on and what it can do |
+| `GET /api/history?username=<name>` | That user's stored attempts, oldest first: scores and times only |
 
 How it differs from the local server:
 - **The page keeps each user's best.** A reply for someone with a `username` includes `best_reference`, their best attempt so far, as numbers. Save it for that username, for example in `localStorage`, and send it back as `best_reference` with their next attempt. Without it, every attempt counts as a first attempt. A `best_reference` from a different model is ignored, so everyone starts again after a model update.
 - **Teammates get the personal model straight away.** If the `username` is a teammate's check-in name (any case, such as `aryan`), the reply comes from the personal model, comparing the attempt with that teammate's first two check-ins from last night (labelled `best-attempt model`, which pages already handle, with a note saying so), and `scaled_features` compares with that baseline. The model file stores those baselines as numbers under scrambled keys, never names.
 - **Choose a model** with `?model=<name>` or `"model"` in the body. Otherwise the API uses the default, the latest export from our real check-ins. `sim-test` was trained on a simulated night and its scores vary, so use it to try the UI. `model_version` in the reply says which model answered.
+- **Ananya's model** is `ananya-2026-11-08`, so add `?model=ananya-2026-11-08`. It compares the typing with the teammate's usual typing from last night's check-ins, and adds the change to their usual KSS for the time of day (before or after the 04:00 nap). It only knows the 8 people who did check-ins. They get a `best-attempt model` reply whose note names her model, with `usual_kss`, `shift` and `phase`. Anyone else gets `not enough data yet`. It was trained on every key in a check-in, including the reaction test, which the demo page doesn't record, so treat its demo scores as rough until it's retrained on the typing alone.
 - There's no `GET /api/best/<username>`, because the page already holds the best in `best_reference`.
 - Errors: 400 if the body isn't JSON, 404 for an unknown model, 413 if the body is over 2 MB, 422 if there isn't enough typing to score, and 500 for anything else.
 
@@ -179,7 +181,7 @@ uv run python ../service/build.py
 cd ../service && vercel deploy --prod
 ```
 
-`export_model.py` saves the model to `service/models/` and lists it in `service/models/index.json`, and `--default` makes it the default. To try the API on this laptop before deploying, run `uv run python ../service/dev_server.py` from `analysis/`; it serves the API at `http://localhost:8766`.
+`export_model.py` saves the model to `service/models/` and lists it in `service/models/index.json`, and `--default` makes it the default. For Ananya's model, run `uv run python export_ananya.py --package /path/to/final_pkg --name ananya-2026-11-08` instead, adding `--typing-only` once it's trained on the typing task alone, then build and deploy the same way. To try the API on this laptop before deploying, run `uv run python ../service/dev_server.py` from `analysis/`; it serves the API at `http://localhost:8766`.
 
 ## What the analysis does
 
@@ -202,6 +204,7 @@ cd ../service && vercel deploy --prod
 | `serve.py` | Live predictions as JSON for the dashboard |
 | `demo.py`, `attempt.py` | Scores one demo attempt for `POST /api/score` |
 | `frozen_model.py`, `export_model.py` | Exports a trained model as plain numbers and scores with it, for the hosted API in `service/` |
+| `ananya_model.py`, `export_ananya.py` | Ananya's per-person model for the hosted API, ported from her `predict.py` |
 | `fair_test.py` | Tests our model against a single SWELL stress score on check-ins after 00:18 on 8 Nov, fixed before we looked at any of them |
 | `results/experiments/` | The overnight experiments of 8 Nov: a shared test harness, five experiment tracks and the frozen morning test. Start with `FINDINGS.md`. Only the code and write-ups are in git, not results from real check-ins |
 | `run_all.py`, `predict_latest.py`, `simulate.py` | The commands above |

@@ -1,0 +1,189 @@
+{
+ "format": "keyboard-fatigue-model/1",
+ "kind": "ananya",
+ "name": "ananya-2026-11-08",
+ "note": "Ananya's per-person model: 8 keystroke features compared with each teammate's usual typing, through a ridge regression, added to their usual KSS for the time of day. It only scores the 8 people with check-ins. Trained on every key in a check-in, including the reaction test.",
+ "created_at": "2026-11-08T09:50:45",
+ "feature_order": [
+  "log_iki_med",
+  "log_iki_sd",
+  "iki_cv",
+  "cps",
+  "pauses_pm",
+  "pause_frac",
+  "log_dwell",
+  "bs_rate"
+ ],
+ "scaler_mean": [
+  -0.003409343314394731,
+  -0.0005827278883242821,
+  0.0004853856847091971,
+  -0.0012654279366164408,
+  0.012175150703814301,
+  -0.0004781610651516184,
+  0.0038704991157257683,
+  -0.00012203333876337717
+ ],
+ "scaler_scale": [
+  0.768359687145265,
+  0.9836067265666956,
+  0.28688053255584695,
+  1.0647173348674603,
+  7.612733354574779,
+  0.3718234203668781,
+  0.18796200138857386,
+  0.0471137142354692
+ ],
+ "coef": [
+  -0.16055725972401022,
+  -0.16390607223838582,
+  0.23590307588183385,
+  0.05795572993045348,
+  0.2989189907241042,
+  -0.1871489854634172,
+  0.5408746894546483,
+  -0.3283230702441376
+ ],
+ "intercept": -0.057489451476793234,
+ "alpha": 10.0,
+ "windows": 2,
+ "key_tasks": null,
+ "people": {
+  "b2f2cc031c21df5f9d60": {
+   "usual_features": {
+    "log_iki_med": -0.01773987697611583,
+    "log_iki_sd": -0.4046137025669321,
+    "iki_cv": 0.6215962745823846,
+    "cps": 1.2062540872250063,
+    "pauses_pm": 14.92294121881916,
+    "pause_frac": 0.581890025224336,
+    "log_dwell": -2.3541468208228746,
+    "bs_rate": 0.019451883152571552
+   },
+   "usual_kss_by_phase": {
+    "post": 3.0,
+    "pre": 6.0
+   },
+   "sessions": 11
+  },
+  "ace290be87bd01af98b3": {
+   "usual_features": {
+    "log_iki_med": -0.35570379449532724,
+    "log_iki_sd": -0.21769480029873378,
+    "iki_cv": 0.8763642348918471,
+    "cps": 1.298015478582735,
+    "pauses_pm": 14.316559730341844,
+    "pause_frac": 0.5315706678743665,
+    "log_dwell": -2.228682051988714,
+    "bs_rate": 0.05458194968596446
+   },
+   "usual_kss_by_phase": {
+    "post": 2.0,
+    "pre": 6.2
+   },
+   "sessions": 11
+  },
+  "5f16bc03df72c0df18a4": {
+   "usual_features": {
+    "log_iki_med": -0.7389940500843192,
+    "log_iki_sd": -1.0356791596991566,
+    "iki_cv": 0.6562600769409496,
+    "cps": 2.5761223371485324,
+    "pauses_pm": 9.23412883841352,
+    "pause_frac": 0.34843513224824746,
+    "log_dwell": -2.4414436017537606,
+    "bs_rate": 0.05460874862701751
+   },
+   "usual_kss_by_phase": {
+    "post": 4.75,
+    "pre": 6.888888888888889
+   },
+   "sessions": 13
+  },
+  "45c32eb4a8c8dd6538b3": {
+   "usual_features": {
+    "log_iki_med": -0.1553120892670159,
+    "log_iki_sd": -0.24870205032786416,
+    "iki_cv": 0.7567986369371111,
+    "cps": 1.163141854729136,
+    "pauses_pm": 11.900433200441233,
+    "pause_frac": 0.5207705041060104,
+    "log_dwell": -2.433344882093026,
+    "bs_rate": 0.036254043721343956
+   },
+   "usual_kss_by_phase": {
+    "post": 4.666666666666667,
+    "pre": 7.571428571428571
+   },
+   "sessions": 10
+  },
+  "7d74f146f5d5171e319a": {
+   "usual_features": {
+    "log_iki_med": -0.081577289269402,
+    "log_iki_sd": -0.6957520894018264,
+    "iki_cv": 0.49251182594065096,
+    "cps": 1.2239645353754391,
+    "pauses_pm": 21.406506941424286,
+    "pause_frac": 0.611819491943252,
+    "log_dwell": -2.6981787596696094,
+    "bs_rate": 0.01
+   },
+   "usual_kss_by_phase": {
+    "pre": 6.0
+   },
+   "sessions": 1
+  },
+  "b0aaa7577c97e04a27fc": {
+   "usual_features": {
+    "log_iki_med": -0.9448188154890909,
+    "log_iki_sd": -0.10957058309514106,
+    "iki_cv": 1.4342104482271107,
+    "cps": 1.619121311358406,
+    "pauses_pm": 14.316441068853273,
+    "pause_frac": 0.48941946830630817,
+    "log_dwell": -2.4247527269682534,
+    "bs_rate": 0.10526315789473684
+   },
+   "usual_kss_by_phase": {
+    "pre": 5.0
+   },
+   "sessions": 1
+  },
+  "871656036ef0a4fae6f0": {
+   "usual_features": {
+    "log_iki_med": -2.010662026283016,
+    "log_iki_sd": -1.8792764640167372,
+    "iki_cv": 0.8314976275315142,
+    "cps": 5.597798198722179,
+    "pauses_pm": 0.0,
+    "pause_frac": 0.0,
+    "log_dwell": -2.654272495423725,
+    "bs_rate": 0.0625
+   },
+   "usual_kss_by_phase": {
+    "pre": 4.0
+   },
+   "sessions": 1
+  },
+  "648de4da0196e4d07070": {
+   "usual_features": {
+    "log_iki_med": -2.1004609089060096,
+    "log_iki_sd": -2.814338342867232,
+    "iki_cv": 0.4484495655018988,
+    "cps": 7.74148769934451,
+    "pauses_pm": 0.0,
+    "pause_frac": 0.0,
+    "log_dwell": -2.3402869601775738,
+    "bs_rate": 0.13793103448275862
+   },
+   "usual_kss_by_phase": {
+    "pre": 2.0
+   },
+   "sessions": 1
+  }
+ },
+ "trained_on": {
+  "people": 8,
+  "sessions": 49
+ }
+}

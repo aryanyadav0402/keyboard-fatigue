@@ -9,10 +9,16 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "lib"))
 
 from frozen_model import check_model, describe_model  # noqa: E402
+from ananya_model import KIND as ANANYA, describe_ananya  # noqa: E402
+
+
+def summary(name: str) -> dict:
+    model = check_model(json.loads((ROOT / "models" / f"{name}.json").read_text()))
+    return describe_ananya(model) if model.get("kind") == ANANYA else describe_model(model)
+
 
 INDEX = json.loads((ROOT / "models" / "index.json").read_text())
-SUMMARIES = [describe_model(check_model(json.loads((ROOT / "models" / f"{name}.json").read_text())))
-             for name in INDEX["models"]]
+SUMMARIES = [summary(name) for name in INDEX["models"]]
 
 
 class handler(BaseHTTPRequestHandler):

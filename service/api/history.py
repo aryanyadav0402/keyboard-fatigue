@@ -13,7 +13,7 @@ from frozen_model import teammate_key  # noqa: E402
 from attempt_store import store_from_env  # noqa: E402
 
 STORE = store_from_env()
-PUBLIC = {"personal model": "best-attempt model", "history model": "best-attempt model"}
+PUBLIC = {"personal model": "best-attempt model", "history model": "best-attempt model", "ananya model": "best-attempt model"}
 
 
 class handler(BaseHTTPRequestHandler):
