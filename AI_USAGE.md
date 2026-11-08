@@ -29,6 +29,7 @@ Keep this current while building, and copy it into the submission. The event's C
 | Skipping people whose only check-ins were aborted, such as a quick test of the app (`analysis/load_data.py`) | Claude Code | all of it | not reviewed yet |
 | Teammates scored by the personal model from their first demo attempt: baselines in the frozen model under scrambled keys (`analysis/frozen_model.py`) | Claude Code | all of it | not reviewed yet |
 | Hosting Ananya's per-person model on the API: a port of her `predict.py` that gives the same scores, her baselines under scrambled keys, a tester-average first try then own-history comparison for people without a baseline, and replies the demo page accepts (`analysis/ananya_model.py`, `analysis/export_ananya.py`, with changes to `service/`). The model, features and weights come from Ananya's package | Claude Code | all of the port | not reviewed yet |
+| Draft of the submission write-up (`SUBMISSION.md`) | Claude Code | all of it | not reviewed yet |
 
 ## What we wrote or decided ourselves
 
