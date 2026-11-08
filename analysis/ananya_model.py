@@ -28,7 +28,7 @@ KIND = "ananya"
 LABEL = "ananya model"  # the internal label stored with each attempt
 MODIFIERS = {"Shift", "Control", "Alt", "Meta", "CapsLock"}
 REPEAT_FLAG = 32
-MIN_KEYS_PER_WINDOW = 8
+MIN_KEYS_PER_WINDOW = 3  # the fewest presses that still give two gaps for the rhythm features
 PHASE_TEXT = {"pre": "before the 04:00 nap (17:00 to 04:00)", "post": "after the 04:00 nap"}
 
 
@@ -50,7 +50,7 @@ def key_events(rows, tasks=None) -> pd.DataFrame:
 
 
 def window_features(e: pd.DataFrame, a: float, b: float) -> dict | None:
-    """Her 8 features for the presses from a to b seconds, or None with fewer than 8 presses."""
+    """Her 8 features for the presses from a to b seconds, or None with too few presses."""
     w = e[(e.pr >= a) & (e.pr < b)]
     if len(w) < MIN_KEYS_PER_WINDOW:
         return None
@@ -173,10 +173,15 @@ def score_ananya(body: dict, model: dict, store=None) -> dict:
     session = body if body.get("schema") == "typing-station" else compact_to_session(body, "DEMO")
     try:
         wf = windows(session["keys"], model.get("key_tasks"), model.get("windows", 2))
+        if not wf:  # too little typing for two halves: use it all as one window
+            wf = windows(session["keys"], model.get("key_tasks"), 1)
     except (KeyError, TypeError, ValueError):
         raise BadSession("each key should be [task, unit, 'd' or 'u', t, code, key, flags]") from None
-    if not wf:
-        raise BadSession("not enough typing to score: send at least 8 key presses in each half of the typing")
+    if not wf:  # a normal reply, not an error, so the page can just ask for more typing
+        return {"score": None, "scale": SCALE, "label": None, "level": None, "model": "not enough data yet",
+                "note": "Not enough typing to read your rhythm: type the whole sentence and try again.",
+                "fatigue_index": None, "username": username, "features": {}, "model_inputs": {},
+                "model_version": model["name"], "history": None, "saved_as_training_data": False}
     cols = model["feature_order"]
     means = {c: float(np.mean([f[c] for f in wf])) for c in cols}
     features = {

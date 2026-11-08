@@ -97,10 +97,12 @@ def test_the_hour_picks_the_phase():
     assert local_hour({"clock": {"start_local_iso": "2026-11-07T18:46:41+00:00"}}) == 18
 
 
-def test_too_little_typing_is_refused(sessions, model):
+def test_little_typing_still_scores_and_almost_none_gets_a_polite_reply(sessions, model):
     s = as_page_sends(sessions[0], "Zoe", 12)
-    with pytest.raises(BadSession):
-        score_ananya(dict(s, keys=s["keys"][:10]), model)
+    few = score_ananya(dict(s, keys=s["keys"][:10]), model)  # a handful of presses is enough
+    assert few["score"] is not None
+    none = score_ananya(dict(s, keys=s["keys"][:2]), model)  # one press has no rhythm: no error, just no score
+    assert none["model"] == "not enough data yet" and none["score"] is None
 
 
 def test_scores_are_stored_under_the_scrambled_key_without_adj(sessions, model):
