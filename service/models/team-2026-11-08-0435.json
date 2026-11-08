@@ -1,0 +1,442 @@
+{
+ "format": "keyboard-fatigue-model/1",
+ "name": "team-2026-11-08-0435",
+ "note": "the same 42 check-ins as team-2026-11-08-0410, plus each teammate's baseline so teammates get the personal model from their first attempt",
+ "created_at": "2026-11-08T09:19:24",
+ "trained_on": {
+  "checkins": 42,
+  "panel_checkins": 39,
+  "panel_people": 4,
+  "scored_checkins": 31
+ },
+ "rule_references": {
+  "typical": {
+   "vt_wpm": {
+    "capitalize_first_and_last": 22.454099051437158,
+    "capitalize_vowels": 20.1426490834234,
+    "dashes_and_vowels": 18.037427581086458,
+    "dashes_for_spaces": 31.726209561740205,
+    "dots_and_vowels": 18.11497611016692
+   },
+   "vt_start_latency": {
+    "capitalize_first_and_last": 2493.8499999996275,
+    "capitalize_vowels": 3015.600000000093,
+    "dashes_and_vowels": 3885.5499999998137,
+    "dashes_for_spaces": 2732.0,
+    "dots_and_vowels": 4329.350000000559
+   },
+   "vt_gap_med": {
+    "capitalize_first_and_last": 219.77499999976135,
+    "capitalize_vowels": 517.9999999997672,
+    "dashes_and_vowels": 370.8749999998836,
+    "dashes_for_spaces": 160.74999999953434,
+    "dots_and_vowels": 327.70000000018626
+   },
+   "vt_gap_cv": {
+    "capitalize_first_and_last": 0.8259702244322963,
+    "capitalize_vowels": 0.9673184914796475,
+    "dashes_and_vowels": 0.9188431829229629,
+    "dashes_for_spaces": 0.5729393468155071,
+    "dots_and_vowels": 0.9704197135984666
+   },
+   "vt_pause500_share": {
+    "capitalize_first_and_last": 0.3961988304093567,
+    "capitalize_vowels": 0.5568181818181819,
+    "dashes_and_vowels": 0.5060975609756098,
+    "dashes_for_spaces": 0.2037037037037037,
+    "dots_and_vowels": 0.5416666666666667
+   },
+   "vt_pause1s_share": {
+    "capitalize_first_and_last": 0.02105496453900709,
+    "capitalize_vowels": 0.06573426573426573,
+    "dashes_and_vowels": 0.09523809523809523,
+    "dashes_for_spaces": 0.037037037037037035,
+    "dots_and_vowels": 0.15625
+   },
+   "vt_hold_med": {
+    "capitalize_first_and_last": 91.84999999971478,
+    "capitalize_vowels": 92.89999999990687,
+    "dashes_and_vowels": 93.57500000006985,
+    "dashes_for_spaces": 84.09999999962747,
+    "dots_and_vowels": 99.42499999990105
+   },
+   "vt_hold_iqr": {
+    "capitalize_first_and_last": 31.425000000279397,
+    "capitalize_vowels": 32.53750000067521,
+    "dashes_and_vowels": 23.47500000036962,
+    "dashes_for_spaces": 28.999999999068677,
+    "dots_and_vowels": 31.725000000791624
+   },
+   "vt_rollover_share": {
+    "capitalize_first_and_last": 0.01,
+    "capitalize_vowels": 0.0,
+    "dashes_and_vowels": 0.0,
+    "dashes_for_spaces": 0.10869565217391304,
+    "dots_and_vowels": 0.0
+   },
+   "vt_accuracy": {
+    "capitalize_first_and_last": 1.0,
+    "capitalize_vowels": 1.0,
+    "dashes_and_vowels": 1.0,
+    "dashes_for_spaces": 1.0,
+    "dots_and_vowels": 1.0
+   },
+   "vt_rule_cost": {
+    "capitalize_first_and_last": 2.1510972460508846,
+    "capitalize_vowels": 1.1413567864720289,
+    "dashes_and_vowels": 1.515494008915848,
+    "dashes_for_spaces": 2.4196649568918724,
+    "dots_and_vowels": 1.8674248132019153
+   },
+   "vt_shift_lead_med": {
+    "capitalize_first_and_last": 187.35000000076252,
+    "capitalize_vowels": 189.9249999999538,
+    "dashes_and_vowels": 167.89999999990687,
+    "dashes_for_spaces": null,
+    "dots_and_vowels": 170.95000000037544
+   },
+   "vt_pause_rel_share": {
+    "capitalize_first_and_last": 0.14854215918045705,
+    "capitalize_vowels": 0.020454545454545454,
+    "dashes_and_vowels": 0.09401709401709402,
+    "dashes_for_spaces": 0.12962962962962962,
+    "dots_and_vowels": 0.16666666666666666
+   },
+   "backspace_per100": {
+    "capitalize_first_and_last": 6.117103235747303,
+    "capitalize_vowels": 5.555555555555555,
+    "dashes_and_vowels": 6.25,
+    "dashes_for_spaces": 3.4482758620689653,
+    "dots_and_vowels": 5.172413793103448
+   }
+  },
+  "overall": {
+   "vt_wpm": 19.236035506515545,
+   "vt_start_latency": 2788.7000000001863,
+   "vt_gap_med": 273.4000000000233,
+   "vt_gap_cv": 0.8398919753153679,
+   "vt_pause500_share": 0.46,
+   "vt_pause1s_share": 0.06521739130434782,
+   "vt_hold_med": 91.8999999994412,
+   "vt_hold_iqr": 30.52500000130385,
+   "vt_rollover_share": 0.0,
+   "vt_accuracy": 1.0,
+   "vt_rule_cost": 1.8307387446533674,
+   "vt_shift_lead_med": 181.02500000009604,
+   "vt_pause_rel_share": 0.1111111111111111,
+   "backspace_per100": 5.172413793103448
+  }
+ },
+ "first_guess": {
+  "columns": [
+   "vt_rule_cost_adj",
+   "vt_gap_cv_adj",
+   "vt_pause_rel_share_adj",
+   "backspace_per100_adj",
+   "vt_accuracy_adj"
+  ],
+  "center": [
+   1.0,
+   0.8398919753153679,
+   0.1111111111111111,
+   5.172413793103448,
+   1.0
+  ],
+  "scale": [
+   0.2386171706822384,
+   0.18750258148401924,
+   0.05740707070707069,
+   3.4745002761868755,
+   0.030607730306661987
+  ],
+  "signs": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   -1.0
+  ],
+  "slope": 0.0,
+  "intercept": 6.487179487179487,
+  "panel_index": [
+   -0.8765426914870906,
+   -0.8079842858263492,
+   -0.7320137865159475,
+   -0.6581584341414434,
+   -0.47135186273953317,
+   -0.4708737605555588,
+   -0.45472624905653375,
+   -0.44596881113710685,
+   -0.39802779537673366,
+   -0.3531400841738074,
+   -0.32803246117026474,
+   -0.3245575477902637,
+   -0.22022574093641217,
+   -0.1769511433963917,
+   -0.07157650831547321,
+   -0.016468901290329317,
+   -0.001746770104708062,
+   0.01757312111640492,
+   0.02015545325708202,
+   0.09793082646704616,
+   0.30212070273066055,
+   0.36099819543991635,
+   0.42812015744097803,
+   0.44097853576746376,
+   0.4830596862397328,
+   0.5561590956368856,
+   0.6339641438457674,
+   0.6454302964133698,
+   0.6546085511648206,
+   0.7773974884612489,
+   0.7923724241886487,
+   0.8547721905035667,
+   0.9240791365374981,
+   1.029771392837874,
+   1.4758326077450503,
+   1.494738911410375,
+   1.5179647429007856,
+   1.5360738330287784,
+   1.7052272057055684
+  ]
+ },
+ "personal": {
+  "features": [
+   "vt_rule_cost_dev",
+   "backspace_per100_adj",
+   "vt_accuracy_dev",
+   "vt_gap_cv_dev",
+   "vt_pause1s_share_dev",
+   "vt_hold_med_dev"
+  ],
+  "fill": [
+   -0.018223926936257018,
+   5.172413793103448,
+   0.0,
+   -0.06733453036123471,
+   0.01615456302956303,
+   -0.2875000001586159
+  ],
+  "mean": [
+   0.04304208159568713,
+   5.937781729384335,
+   0.022228505140998955,
+   -0.1386273434421332,
+   0.013858040041773717,
+   3.4165322581020225
+  ],
+  "scale": [
+   0.2940920151425799,
+   4.350498337036034,
+   0.043298395379995365,
+   0.4210371521348984,
+   0.07113836852211407,
+   13.20513302410376
+  ],
+  "coef": [
+   0.16771687771343255,
+   -0.1977229157445028,
+   -0.07714705659540674,
+   -0.8243450731669214,
+   0.8482419211363472,
+   0.3599313265003167
+  ],
+  "intercept": 0.9354838709677418
+ },
+ "teammates": {
+  "b2f2cc031c21df5f9d60": {
+   "kss_base": 5.0,
+   "baseline": {
+    "vt_rule_cost_adj": 1.007,
+    "vt_accuracy_adj": 0.905,
+    "vt_gap_cv_adj": 0.898,
+    "vt_pause1s_share_adj": 0.017,
+    "vt_hold_med_adj": 71.287
+   },
+   "shown_base": {
+    "wpm": 18.974,
+    "start_latency_ms": 3905.95,
+    "rule_cost": 1.989,
+    "gap_median_ms": 385.325,
+    "rhythm_unevenness": 0.93,
+    "long_pause_share": 0.01,
+    "key_hold_ms": 72.1,
+    "accuracy": 0.905,
+    "missed_capitals": 0.0,
+    "wrong_capitals": 0.0,
+    "other_errors": 4.0,
+    "backspaces_per_100_keys": 6.515,
+    "shift_lead_ms": 191.0,
+    "reaction_median_ms": 272.068,
+    "reaction_speed": 3.666
+   }
+  },
+  "ace290be87bd01af98b3": {
+   "kss_base": 7.0,
+   "baseline": {
+    "vt_rule_cost_adj": 1.106,
+    "vt_accuracy_adj": 1.0,
+    "vt_gap_cv_adj": 0.917,
+    "vt_pause1s_share_adj": 0.156,
+    "vt_hold_med_adj": 107.5
+   },
+   "shown_base": {
+    "wpm": 16.853,
+    "start_latency_ms": 5336.4,
+    "rule_cost": 1.875,
+    "gap_median_ms": 342.4,
+    "rhythm_unevenness": 1.021,
+    "long_pause_share": 0.217,
+    "key_hold_ms": 112.1,
+    "accuracy": 1.0,
+    "missed_capitals": 0.0,
+    "wrong_capitals": 0.0,
+    "other_errors": 0.0,
+    "backspaces_per_100_keys": 4.547,
+    "shift_lead_ms": 189.0,
+    "reaction_median_ms": 371.596,
+    "reaction_speed": 2.938
+   }
+  },
+  "5f16bc03df72c0df18a4": {
+   "kss_base": 5.0,
+   "baseline": {
+    "vt_rule_cost_adj": 0.694,
+    "vt_accuracy_adj": 1.0,
+    "vt_gap_cv_adj": 1.414,
+    "vt_pause1s_share_adj": 0.012,
+    "vt_hold_med_adj": 95.1
+   },
+   "shown_base": {
+    "wpm": 19.199,
+    "start_latency_ms": 1568.0,
+    "rule_cost": 1.157,
+    "gap_median_ms": 330.425,
+    "rhythm_unevenness": 1.519,
+    "long_pause_share": 0.073,
+    "key_hold_ms": 99.7,
+    "accuracy": 1.0,
+    "missed_capitals": 0.0,
+    "wrong_capitals": 0.0,
+    "other_errors": 0.0,
+    "backspaces_per_100_keys": 16.146,
+    "shift_lead_ms": 137.975,
+    "reaction_median_ms": 267.572,
+    "reaction_speed": 3.527
+   }
+  },
+  "45c32eb4a8c8dd6538b3": {
+   "kss_base": 6.0,
+   "baseline": {
+    "vt_rule_cost_adj": 1.2,
+    "vt_accuracy_adj": 1.0,
+    "vt_gap_cv_adj": 0.887,
+    "vt_pause1s_share_adj": 0.061,
+    "vt_hold_med_adj": 93.125
+   },
+   "shown_base": {
+    "wpm": 20.624,
+    "start_latency_ms": 2351.55,
+    "rule_cost": 1.942,
+    "gap_median_ms": 284.025,
+    "rhythm_unevenness": 0.944,
+    "long_pause_share": 0.039,
+    "key_hold_ms": 93.6,
+    "accuracy": 1.0,
+    "missed_capitals": 0.0,
+    "wrong_capitals": 0.0,
+    "other_errors": 0.0,
+    "backspaces_per_100_keys": 10.793,
+    "shift_lead_ms": 209.5,
+    "reaction_median_ms": 263.33,
+    "reaction_speed": 3.668
+   }
+  }
+ },
+ "typical_for_rule": {
+  "capitalize_first_and_last": {
+   "wpm": 22.454,
+   "start_latency_ms": 2493.85,
+   "rule_cost": 2.151,
+   "gap_median_ms": 219.775,
+   "rhythm_unevenness": 0.826,
+   "long_pause_share": 0.021,
+   "key_hold_ms": 91.85,
+   "accuracy": 1.0,
+   "missed_capitals": 0.0,
+   "wrong_capitals": 0.0,
+   "other_errors": 0.0,
+   "backspaces_per_100_keys": 6.117,
+   "shift_lead_ms": 187.35,
+   "reaction_median_ms": 280.719,
+   "reaction_speed": 3.514
+  },
+  "capitalize_vowels": {
+   "wpm": 20.143,
+   "start_latency_ms": 3015.6,
+   "rule_cost": 1.141,
+   "gap_median_ms": 518.0,
+   "rhythm_unevenness": 0.967,
+   "long_pause_share": 0.066,
+   "key_hold_ms": 92.9,
+   "accuracy": 1.0,
+   "missed_capitals": 0.0,
+   "wrong_capitals": 0.0,
+   "other_errors": 0.0,
+   "backspaces_per_100_keys": 5.556,
+   "shift_lead_ms": 189.925,
+   "reaction_median_ms": 284.835,
+   "reaction_speed": 3.369
+  },
+  "dashes_and_vowels": {
+   "wpm": 18.037,
+   "start_latency_ms": 3885.55,
+   "rule_cost": 1.515,
+   "gap_median_ms": 370.875,
+   "rhythm_unevenness": 0.919,
+   "long_pause_share": 0.095,
+   "key_hold_ms": 93.575,
+   "accuracy": 1.0,
+   "missed_capitals": 0.0,
+   "wrong_capitals": 0.0,
+   "other_errors": 0.0,
+   "backspaces_per_100_keys": 6.25,
+   "shift_lead_ms": 167.9,
+   "reaction_median_ms": 278.837,
+   "reaction_speed": 3.527
+  },
+  "dashes_for_spaces": {
+   "wpm": 31.726,
+   "start_latency_ms": 2732.0,
+   "rule_cost": 2.42,
+   "gap_median_ms": 160.75,
+   "rhythm_unevenness": 0.573,
+   "long_pause_share": 0.037,
+   "key_hold_ms": 84.1,
+   "accuracy": 1.0,
+   "missed_capitals": 0.0,
+   "wrong_capitals": 0.0,
+   "other_errors": 0.0,
+   "backspaces_per_100_keys": 3.448,
+   "reaction_median_ms": 284.614,
+   "reaction_speed": 3.501
+  },
+  "dots_and_vowels": {
+   "wpm": 18.115,
+   "start_latency_ms": 4329.35,
+   "rule_cost": 1.867,
+   "gap_median_ms": 327.7,
+   "rhythm_unevenness": 0.97,
+   "long_pause_share": 0.156,
+   "key_hold_ms": 99.425,
+   "accuracy": 1.0,
+   "missed_capitals": 0.0,
+   "wrong_capitals": 0.0,
+   "other_errors": 0.0,
+   "backspaces_per_100_keys": 5.172,
+   "shift_lead_ms": 170.95,
+   "reaction_median_ms": 262.188,
+   "reaction_speed": 3.628
+  }
+ }
+}

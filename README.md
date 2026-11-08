@@ -152,6 +152,7 @@ The demo page calls a hosted copy of `POST /api/score` at **https://keyboard-fat
 
 How it differs from the local server:
 - **The page keeps each user's best.** A reply for someone with a `username` includes `best_reference`, their best attempt so far, as numbers. Save it for that username, for example in `localStorage`, and send it back as `best_reference` with their next attempt. Without it, every attempt counts as a first attempt. A `best_reference` from a different model is ignored, so everyone starts again after a model update.
+- **Teammates get the personal model straight away.** If the `username` is a teammate's check-in name (any case, such as `aryan`), the reply comes from the `personal model`, comparing the attempt with that teammate's first two check-ins from last night, and `scaled_features` compares with that baseline. The model file stores those baselines as numbers under scrambled keys, never names.
 - **Choose a model** with `?model=<name>` or `"model"` in the body. Otherwise the API uses the default, the latest export from our real check-ins. `sim-test` was trained on a simulated night and its scores vary, so use it to try the UI. `model_version` in the reply says which model answered.
 - There's no `GET /api/best/<username>`, because the page already holds the best in `best_reference`.
 - Errors: 400 if the body isn't JSON, 404 for an unknown model, 413 if the body is over 2 MB, 422 if there isn't enough typing to score, and 500 for anything else.

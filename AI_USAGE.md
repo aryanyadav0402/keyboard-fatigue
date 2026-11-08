@@ -27,6 +27,7 @@ Keep this current while building, and copy it into the submission. The event's C
 | A fair test of our model against a single SWELL stress score, fixed before we looked at later check-ins (`analysis/fair_test.py`) | Claude Code | all of it | not reviewed yet |
 | Overnight experiments: a shared test harness, five experiment tracks run as Claude Code subagents (sequence and neural models, keystroke-level features, small-data training strategies, first-guess models, simulation), the frozen morning test and the write-up (`analysis/results/experiments/`) | Claude Code | all of it | not reviewed yet |
 | Skipping people whose only check-ins were aborted, such as a quick test of the app (`analysis/load_data.py`) | Claude Code | all of it | not reviewed yet |
+| Teammates scored by the personal model from their first demo attempt: baselines in the frozen model under scrambled keys (`analysis/frozen_model.py`) | Claude Code | all of it | not reviewed yet |
 
 ## What we wrote or decided ourselves
 

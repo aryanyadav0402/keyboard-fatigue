@@ -18,6 +18,7 @@ KSS_LABELS = {1: "Extremely alert", 2: "Very alert", 3: "Alert", 4: "Rather aler
               7: "Sleepy, but no effort to stay awake", 8: "Sleepy, some effort to stay awake",
               9: "Very sleepy, fighting sleep"}
 NOTES = {
+    "personal model": "Compared with your own first two check-ins from last night.",
     "best-attempt model": "Compared with your best attempt so far, which scored {best:.1f}.",
     "no-baseline model": ("A first guess: we don't know your normal typing yet, so treat it as rough. "
                           "Your next attempts will be compared with your best one."),

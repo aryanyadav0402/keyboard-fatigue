@@ -44,6 +44,23 @@ def walkups(folder):
     return sorted({p.name.split("_")[0] for p in folder.glob("WALKUP-*.json")})
 
 
+def test_teammate_gets_the_personal_model_from_the_first_attempt(night, frozen):
+    from model import display_models
+    f = build_features(load_sessions(night))
+    main = display_models(f)
+    who = sorted({p.name.split("_")[0] for p in night.glob("PANEL-*.json")})[1]
+    row = f[(f.person == who) & ~f.is_baseline.astype(bool) & f.kss.notna()].sort_values("timestamp").iloc[2]
+    path = next(night.glob(f"{who}_*_{row.checkin_id}.json"))
+    n = int(path.name.split("_")[1])
+    expected = np.clip(row.kss_base + main["main"].predict(row[main["typing"]].to_numpy(float).reshape(1, -1))[0], 1, 9)
+    reply = score_attempt(demo_body(night, who, n, username=who.lower()), frozen)  # typed in any case
+    assert reply["model"] == "personal model" and reply["fatigue_index"] is None
+    assert reply["score"] == pytest.approx(expected, abs=0.06)
+    stranger = score_attempt(demo_body(night, who, n, username="someone new"), frozen)
+    assert stranger["model"] == "no-baseline model"
+    assert len(frozen["teammates"]) == f.loc[f.participant_type.eq("panel"), "person"].nunique()
+
+
 def test_frozen_first_guess_matches_the_local_server(night, frozen):
     train = load_sessions(night)
     for who in walkups(night)[:5]:

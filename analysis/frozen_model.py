@@ -11,9 +11,16 @@ local POST /api/score (demo.py), plus `best_reference` and `model_version`. Beca
 can't keep a database, the page keeps `best_reference` for each username and sends it back with
 that user's next attempt.
 
+Teammates are the exception: the file also holds each teammate's baseline (the average of their
+first two check-ins, as numbers) under a scrambled key made from their check-in name, so a teammate
+who types that name on the demo page is scored by the personal model against last night's baseline
+from their very first attempt.
+
     uv run python export_model.py --data ../data/sessions --name real-2026-11-08
 """
 
+import hashlib
+import math
 from datetime import datetime
 
 import numpy as np
@@ -23,9 +30,52 @@ from attempt import (NOTES, REFERENCE, SCALE, SHOWN, BadSession, check_typing, c
                      kss_wording, read_attempt)
 from features import apply_rule_references, build_features, rule_references
 from first_guess import LABELS, FatigueIndex, describe_from_index
-from load_data import Tables
+from load_data import Tables, normalise_name
 
 FORMAT = "keyboard-fatigue-model/1"
+TEAMMATE_SALT = "keyboard-fatigue/teammate/1"
+
+
+def teammate_key(name: str) -> str:
+    """The scrambled key a teammate's baseline is stored under, so the file holds no names."""
+    return hashlib.sha256((TEAMMATE_SALT + normalise_name(name)).encode()).hexdigest()[:20]
+
+
+def teammate_baselines(f: pd.DataFrame, features: list[str]) -> dict:
+    """Each teammate's baseline as numbers: their first two check-ins' average for every feature the
+    personal model compares, their average rating then, and the shown features for ratios."""
+    base = f[f.participant_type.eq("panel") & f.is_baseline.astype(bool) & f.kss.notna()]
+    sources = []
+    for feature in features:
+        if feature.endswith("_dev"):
+            col = feature[:-4]
+            sources.append(col + "_adj" if col + "_adj" in f else col)
+    out = {}
+    for person, g in base.groupby("person"):
+        if len(g) < 2:
+            continue
+        out[teammate_key(person)] = {
+            "kss_base": float(g.kss.mean()),
+            "baseline": {src: clean(g[src].mean()) for src in sources if src in g},
+            "shown_base": {label: clean(g[col].mean()) for col, label in SHOWN.items() if col in g},
+        }
+    return out
+
+
+def teammate_inputs(row: pd.Series, features: list[str], mate: dict) -> list[float]:
+    """The personal model's inputs for one attempt: each feature's change from the teammate's baseline
+    (backspaces per 100 keys stay as they are, as in training)."""
+    x = []
+    for feature in features:
+        if feature.endswith("_dev"):
+            col = feature[:-4]
+            src = col + "_adj" if col + "_adj" in mate["baseline"] else col
+            value, normal = row.get(src), mate["baseline"].get(src)
+            x.append(float(value) - float(normal) if pd.notna(value) and normal is not None else math.nan)
+        else:
+            value = row.get(feature)
+            x.append(float(value) if pd.notna(value) else math.nan)
+    return x
 
 
 def plain(x):
@@ -86,6 +136,7 @@ def export_model(f: pd.DataFrame, name: str, note: str = "") -> dict:
         "rule_references": rule_references(f),
         "first_guess": first_guess,
         "personal": personal,
+        "teammates": teammate_baselines(f, personal["features"]) if personal else {},
         "typical_for_rule": typical,
     })
 
@@ -141,8 +192,15 @@ def score_attempt(body: dict, model: dict, best_reference: dict | None = None) -
         best = None  # a best from another model isn't comparable, so the user starts again with this one
 
     fg = first_guess_index(model)
+    mate = (model.get("teammates") or {}).get(teammate_key(username)) if username else None
     score, model_name, inputs = None, "not enough data yet", {}
-    if best is not None and model.get("personal"):
+    if mate is not None and model.get("personal"):
+        # a teammate: the personal model against their baseline from last night, from the first attempt
+        params = model["personal"]
+        x = teammate_inputs(row, params["features"], mate)
+        score, model_name = float(np.clip(mate["kss_base"] + personal_predict(params, x), 1, 9)), "personal model"
+        inputs = dict(zip(params["features"], x))
+    elif best is not None and model.get("personal"):
         params = model["personal"]
         attempt, repeat = compared_with_best(row, best["adj"], params["features"])
         change = personal_predict(params, attempt) - personal_predict(params, repeat)
@@ -169,7 +227,11 @@ def score_attempt(body: dict, model: dict, best_reference: dict | None = None) -
         best_info = {"score": round(new_reference["score"], 1), "attempts": attempts, "new_best": new_best,
                      "best_at": new_reference.get("best_at")}
     scaled = None
-    if best is not None:
+    if mate is not None:
+        base_raw = mate.get("shown_base") or {}
+        scaled = {label: (round(value / base_raw[label], 3) if value is not None and base_raw.get(label) else None)
+                  for label, value in shown.items()}
+    elif best is not None:
         best_raw = best.get("raw") or {}
         scaled = {label: (round(value / best_raw[label], 3) if value is not None and best_raw.get(label) else None)
                   for label, value in shown.items()}
@@ -202,6 +264,6 @@ def describe_model(model: dict) -> dict:
     """A short public summary of a model file, for GET /api/models."""
     return {"name": model["name"], "note": model.get("note", ""), "created_at": model.get("created_at"),
             "trained_on": model.get("trained_on"), "first_guess_ready": bool(model.get("first_guess")),
-            "personal_ready": bool(model.get("personal")),
+            "personal_ready": bool(model.get("personal")), "teammates": len(model.get("teammates") or {}),
             "first_guess_follows_tiredness": bool(model.get("first_guess") and model["first_guess"]["slope"] > 0),
             "rules": sorted(model.get("typical_for_rule", {})), "labels": LABELS}
