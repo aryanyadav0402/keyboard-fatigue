@@ -1,0 +1,326 @@
+{
+ "format": "keyboard-fatigue-model/1",
+ "name": "team-2026-11-08-0110",
+ "note": "36 real check-ins up to 00:53 on 8 Nov",
+ "created_at": "2026-11-08T01:12:19",
+ "trained_on": {
+  "checkins": 36,
+  "panel_checkins": 33,
+  "panel_people": 5,
+  "scored_checkins": 24
+ },
+ "rule_references": {
+  "typical": {
+   "vt_wpm": {
+    "capitalize_first_and_last": 22.454099051437158,
+    "capitalize_vowels": 21.68175296264149,
+    "dashes_and_vowels": 16.170837442943494,
+    "dashes_for_spaces": 32.36860245561745,
+    "dots_and_vowels": 18.11497611016692
+   },
+   "vt_start_latency": {
+    "capitalize_first_and_last": 2493.8499999996275,
+    "capitalize_vowels": 1918.7999999988824,
+    "dashes_and_vowels": 4071.7000000000044,
+    "dashes_for_spaces": 2732.0,
+    "dots_and_vowels": 4329.350000000559
+   },
+   "vt_gap_med": {
+    "capitalize_first_and_last": 219.77499999976135,
+    "capitalize_vowels": 353.5,
+    "dashes_and_vowels": 411.39999999990687,
+    "dashes_for_spaces": 158.29999999981374,
+    "dots_and_vowels": 327.70000000018626
+   },
+   "vt_gap_cv": {
+    "capitalize_first_and_last": 0.8259702244322963,
+    "capitalize_vowels": 0.8601196038129704,
+    "dashes_and_vowels": 0.9989878542505923,
+    "dashes_for_spaces": 0.5729393468155071,
+    "dots_and_vowels": 0.9704197135984666
+   },
+   "vt_pause500_share": {
+    "capitalize_first_and_last": 0.3961988304093567,
+    "capitalize_vowels": 0.4375,
+    "dashes_and_vowels": 0.5918367346938775,
+    "dashes_for_spaces": 0.2037037037037037,
+    "dots_and_vowels": 0.5416666666666667
+   },
+   "vt_pause1s_share": {
+    "capitalize_first_and_last": 0.02105496453900709,
+    "capitalize_vowels": 0.041666666666666664,
+    "dashes_and_vowels": 0.09523809523809523,
+    "dashes_for_spaces": 0.037037037037037035,
+    "dots_and_vowels": 0.15625
+   },
+   "vt_hold_med": {
+    "capitalize_first_and_last": 91.84999999971478,
+    "capitalize_vowels": 95.39999999990687,
+    "dashes_and_vowels": 87.5,
+    "dashes_for_spaces": 80.20000000018626,
+    "dots_and_vowels": 99.42499999990105
+   },
+   "vt_hold_iqr": {
+    "capitalize_first_and_last": 31.425000000279397,
+    "capitalize_vowels": 27.70000000006985,
+    "dashes_and_vowels": 24.39999999999418,
+    "dashes_for_spaces": 28.09999999916181,
+    "dots_and_vowels": 31.725000000791624
+   },
+   "vt_rollover_share": {
+    "capitalize_first_and_last": 0.01,
+    "capitalize_vowels": 0.0,
+    "dashes_and_vowels": 0.0,
+    "dashes_for_spaces": 0.10869565217391304,
+    "dots_and_vowels": 0.0
+   },
+   "vt_accuracy": {
+    "capitalize_first_and_last": 1.0,
+    "capitalize_vowels": 1.0,
+    "dashes_and_vowels": 1.0,
+    "dashes_for_spaces": 1.0,
+    "dots_and_vowels": 1.0
+   },
+   "vt_rule_cost": {
+    "capitalize_first_and_last": 2.1510972460508846,
+    "capitalize_vowels": 1.1413567864720289,
+    "dashes_and_vowels": 1.3946243814672363,
+    "dashes_for_spaces": 2.1567651633044513,
+    "dots_and_vowels": 1.8674248132019153
+   },
+   "vt_shift_lead_med": {
+    "capitalize_first_and_last": 187.35000000076252,
+    "capitalize_vowels": 176.67500000018663,
+    "dashes_and_vowels": 199.89999999990687,
+    "dashes_for_spaces": null,
+    "dots_and_vowels": 170.95000000037544
+   },
+   "vt_pause_rel_share": {
+    "capitalize_first_and_last": 0.14854215918045705,
+    "capitalize_vowels": 0.0,
+    "dashes_and_vowels": 0.1111111111111111,
+    "dashes_for_spaces": 0.12962962962962962,
+    "dots_and_vowels": 0.16666666666666666
+   },
+   "backspace_per100": {
+    "capitalize_first_and_last": 6.117103235747303,
+    "capitalize_vowels": 8.620689655172415,
+    "dashes_and_vowels": 6.25,
+    "dashes_for_spaces": 3.4482758620689653,
+    "dots_and_vowels": 5.172413793103448
+   }
+  },
+  "overall": {
+   "vt_wpm": 19.566955676455372,
+   "vt_start_latency": 2788.7000000001863,
+   "vt_gap_med": 259.19999999925494,
+   "vt_gap_cv": 0.8398919753153679,
+   "vt_pause500_share": 0.4444444444444444,
+   "vt_pause1s_share": 0.05454545454545454,
+   "vt_hold_med": 91.8999999994412,
+   "vt_hold_iqr": 28.999999999068677,
+   "vt_rollover_share": 0.0,
+   "vt_accuracy": 1.0,
+   "vt_rule_cost": 1.8361114726744743,
+   "vt_shift_lead_med": 178.10000000000582,
+   "vt_pause_rel_share": 0.12244897959183673,
+   "backspace_per100": 5.172413793103448
+  }
+ },
+ "first_guess": {
+  "columns": [
+   "vt_rule_cost_adj",
+   "vt_gap_cv_adj",
+   "vt_pause_rel_share_adj",
+   "backspace_per100_adj",
+   "vt_accuracy_adj"
+  ],
+  "center": [
+   1.0,
+   0.8398919753153679,
+   0.12244897959183673,
+   5.172413793103448,
+   1.0
+  ],
+  "scale": [
+   0.22741951998702534,
+   0.2896121153584473,
+   0.05068717948717947,
+   3.4521323529411765,
+   0.06783726854796508
+  ],
+  "signs": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   -1.0
+  ],
+  "slope": 0.0,
+  "intercept": 6.121212121212121,
+  "panel_index": [
+   -0.7687512655780431,
+   -0.7664277713290217,
+   -0.5400454936926259,
+   -0.48780452521554774,
+   -0.41603589392736195,
+   -0.4039892241468278,
+   -0.38961212624156083,
+   -0.3832794019841531,
+   -0.37209423871314706,
+   -0.35516755092418417,
+   -0.28766662881080174,
+   -0.2146989117408779,
+   -0.17348114004895532,
+   -0.05947509496520862,
+   -0.047720291629172754,
+   -0.010107175103926048,
+   0.08989945803259738,
+   0.2484825168778539,
+   0.2585378267533114,
+   0.3610945360305216,
+   0.4635984817560691,
+   0.4814080287439738,
+   0.5691908432306031,
+   0.5826476304306686,
+   0.7040153811227223,
+   0.7924064490931287,
+   0.9247361412069243,
+   1.2164847254874664,
+   1.320993097262675,
+   1.3655499349939724,
+   1.4314752073309338,
+   1.485092619714833,
+   1.7903736630672569
+  ]
+ },
+ "personal": {
+  "features": [
+   "vt_rule_cost_dev",
+   "backspace_per100_adj",
+   "vt_accuracy_dev",
+   "vt_gap_cv_dev",
+   "vt_pause1s_share_dev",
+   "vt_hold_med_dev"
+  ],
+  "fill": [
+   -0.046868471156485736,
+   5.172413793103448,
+   0.0,
+   -0.09086196859174339,
+   0.014845652279162916,
+   -2.050000000905129
+  ],
+  "mean": [
+   0.03405291455416932,
+   5.4075544542037255,
+   0.020775311203949046,
+   -0.14211987314100416,
+   0.014696367171221728,
+   0.11302083317392923
+  ],
+  "scale": [
+   0.3340514003303523,
+   4.390095408615557,
+   0.04327011433897782,
+   0.4543717489713014,
+   0.07132451781950738,
+   12.134415630726297
+  ],
+  "coef": [
+   -0.07803236202877417,
+   -0.18432496086077488,
+   -0.06350554395745034,
+   -1.257477533357637,
+   0.9063863135597723,
+   0.3808797415397872
+  ],
+  "intercept": 0.75
+ },
+ "typical_for_rule": {
+  "capitalize_first_and_last": {
+   "wpm": 22.454,
+   "start_latency_ms": 2493.85,
+   "rule_cost": 2.151,
+   "gap_median_ms": 219.775,
+   "rhythm_unevenness": 0.826,
+   "long_pause_share": 0.021,
+   "key_hold_ms": 91.85,
+   "accuracy": 1.0,
+   "missed_capitals": 0.0,
+   "wrong_capitals": 0.0,
+   "other_errors": 0.0,
+   "backspaces_per_100_keys": 6.117,
+   "shift_lead_ms": 187.35,
+   "reaction_median_ms": 280.719,
+   "reaction_speed": 3.514
+  },
+  "capitalize_vowels": {
+   "wpm": 21.682,
+   "start_latency_ms": 1918.8,
+   "rule_cost": 1.141,
+   "gap_median_ms": 353.5,
+   "rhythm_unevenness": 0.86,
+   "long_pause_share": 0.042,
+   "key_hold_ms": 95.4,
+   "accuracy": 1.0,
+   "missed_capitals": 0.0,
+   "wrong_capitals": 0.0,
+   "other_errors": 0.0,
+   "backspaces_per_100_keys": 8.621,
+   "shift_lead_ms": 176.675,
+   "reaction_median_ms": 286.87,
+   "reaction_speed": 3.398
+  },
+  "dashes_and_vowels": {
+   "wpm": 16.171,
+   "start_latency_ms": 4071.7,
+   "rule_cost": 1.395,
+   "gap_median_ms": 411.4,
+   "rhythm_unevenness": 0.999,
+   "long_pause_share": 0.095,
+   "key_hold_ms": 87.5,
+   "accuracy": 1.0,
+   "missed_capitals": 0.0,
+   "wrong_capitals": 0.0,
+   "other_errors": 0.0,
+   "backspaces_per_100_keys": 6.25,
+   "shift_lead_ms": 199.9,
+   "reaction_median_ms": 279.9,
+   "reaction_speed": 3.525
+  },
+  "dashes_for_spaces": {
+   "wpm": 32.369,
+   "start_latency_ms": 2732.0,
+   "rule_cost": 2.157,
+   "gap_median_ms": 158.3,
+   "rhythm_unevenness": 0.573,
+   "long_pause_share": 0.037,
+   "key_hold_ms": 80.2,
+   "accuracy": 1.0,
+   "missed_capitals": 0.0,
+   "wrong_capitals": 0.0,
+   "other_errors": 0.0,
+   "backspaces_per_100_keys": 3.448,
+   "reaction_median_ms": 270.573,
+   "reaction_speed": 3.518
+  },
+  "dots_and_vowels": {
+   "wpm": 18.115,
+   "start_latency_ms": 4329.35,
+   "rule_cost": 1.867,
+   "gap_median_ms": 327.7,
+   "rhythm_unevenness": 0.97,
+   "long_pause_share": 0.156,
+   "key_hold_ms": 99.425,
+   "accuracy": 1.0,
+   "missed_capitals": 0.0,
+   "wrong_capitals": 0.0,
+   "other_errors": 0.0,
+   "backspaces_per_100_keys": 5.172,
+   "shift_lead_ms": 170.95,
+   "reaction_median_ms": 262.188,
+   "reaction_speed": 3.628
+  }
+ }
+}
