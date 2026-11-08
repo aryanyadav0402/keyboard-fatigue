@@ -13,8 +13,11 @@ import json
 from pathlib import Path
 
 from ananya_model import describe_ananya, export_ananya
+from load_data import normalise_name
 
 MODELS = Path(__file__).resolve().parent.parent / "service" / "models"
+# Her spec: a stranger starts from the mean of the 4 testers, our team, not the walk-ups
+TESTERS = tuple(normalise_name(n) for n in ("Ananya", "Aryan", "Christy", "Fin"))
 
 
 def main() -> None:
@@ -27,7 +30,10 @@ def main() -> None:
     parser.add_argument("--out", default=str(MODELS))
     args = parser.parse_args()
 
-    model = export_ananya(Path(args.package), args.name, args.note, args.typing_only)
+    model = export_ananya(Path(args.package), args.name, args.note, args.typing_only, testers=TESTERS)
+    missing = [t for t in TESTERS if t not in json.loads((Path(args.package) / "person_baselines.json").read_text())]
+    if missing:
+        raise SystemExit(f"testers missing from person_baselines.json: {missing}")
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     (out / f"{args.name}.json").write_text(json.dumps(model, indent=1) + "\n")
@@ -42,6 +48,7 @@ def main() -> None:
     print(f"Saved {out / (args.name + '.json')} (default: {index['default']})")
     print(f"  {summary['teammates']} people with baselines, {summary['trained_on']['sessions']} clean sessions; "
           f"typing only: {summary['typing_only']}")
+    print(f"  strangers start from the {summary['testers']} testers' average KSS: {summary['tester_kss_by_phase']}")
 
 
 if __name__ == "__main__":

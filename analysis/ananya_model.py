@@ -92,8 +92,10 @@ def phase_of(hour: int) -> str:
     return "pre" if hour >= 17 or hour < 4 else "post"
 
 
-def export_ananya(package: Path, name: str, note: str = "", typing_only: bool = False) -> dict:
-    """Her package (model_weights.json, person_baselines.json) as a model file with no names in it."""
+def export_ananya(package: Path, name: str, note: str = "", typing_only: bool = False, testers=None) -> dict:
+    """Her package (model_weights.json, person_baselines.json) as a model file with no names in it.
+    `testers` names the people whose average a stranger starts from (everyone when None); the file
+    keeps only their scrambled keys."""
     weights = json.loads((Path(package) / "model_weights.json").read_text())
     baselines = json.loads((Path(package) / "person_baselines.json").read_text())
     cols = list(weights["feature_order"])
@@ -119,13 +121,15 @@ def export_ananya(package: Path, name: str, note: str = "", typing_only: bool = 
         "windows": int(weights.get("windows", 2)),
         "key_tasks": [0] if typing_only else None,
         "people": people,
+        "testers": None if testers is None else sorted({teammate_key(t) for t in testers} & set(people)),
         "trained_on": {"people": len(people), "sessions": sum(p["sessions"] for p in people.values())},
     }
 
 
 def tester_average(model: dict) -> dict:
-    """The average tester: everyone's usual features, and their usual KSS for each phase."""
-    people = list((model.get("people") or {}).values())
+    """The average tester: the testers' usual features, and their usual KSS for each phase."""
+    chosen = model.get("testers")
+    people = [p for k, p in (model.get("people") or {}).items() if chosen is None or k in chosen]
     kss = {}
     for phase in ("pre", "post"):
         values = [p["usual_kss_by_phase"][phase] for p in people if phase in p["usual_kss_by_phase"]]
@@ -154,6 +158,7 @@ def describe_ananya(model: dict) -> dict:
     return {"name": model["name"], "kind": KIND, "note": model.get("note", ""), "created_at": model.get("created_at"),
             "trained_on": model.get("trained_on"), "first_guess_ready": False, "personal_ready": True,
             "teammates": len(model.get("people") or {}), "first_guess_follows_tiredness": False,
+            "testers": tester_average(model)["people"], "tester_kss_by_phase": tester_average(model)["usual_kss_by_phase"],
             "typing_only": model.get("key_tasks") == [0], "features": model["feature_order"]}
 
 

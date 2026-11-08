@@ -113,6 +113,24 @@ def test_scores_are_stored_under_the_scrambled_key_without_adj(sessions, model):
     assert len(store.rows) == 1
 
 
+def test_only_the_named_testers_make_the_average(sessions, tmp_path):
+    wf = windows(sessions[0]["keys"])
+    usual = {c: float(np.mean([f[c] for f in wf])) for c in COLS}
+    (tmp_path / "model_weights.json").write_text(json.dumps({
+        "feature_order": COLS, "windows": 2, "scaler_mean": [0.0] * 8, "scaler_scale": [1.0] * 8, "coef": COEF,
+        "intercept": 0.25}))
+    (tmp_path / "person_baselines.json").write_text(json.dumps({
+        "ZOE": {"n_clean_sessions": 3, "usual_features": usual, "usual_kss_by_phase": {"pre": 6.0, "post": 3.0}},
+        "WALKER": {"n_clean_sessions": 2, "usual_features": {c: v + 1 for c, v in usual.items()},
+                   "usual_kss_by_phase": {"pre": 2.0, "post": 8.0}}}))
+    team = json.loads(json.dumps(export_ananya(tmp_path, "t", testers=["Zoe"])))
+    r = score_ananya(as_page_sends(sessions[0], "A Judge", 12), team)
+    assert r["usual_kss"] == 3.0 and r["shift"] == pytest.approx(0.25, abs=1e-3) and "1 testers" in r["note"]
+    assert len(team["testers"]) == 1 and "WALKER" not in json.dumps(team).upper()
+    everyone = export_ananya(tmp_path, "t")
+    assert score_ananya(as_page_sends(sessions[0], "A Judge", 12), everyone)["usual_kss"] == 5.5
+
+
 def test_model_file_holds_no_names(model):
     text = json.dumps(model)
     assert "ZOE" not in text.upper() and model["kind"] == "ananya" and model["key_tasks"] is None
