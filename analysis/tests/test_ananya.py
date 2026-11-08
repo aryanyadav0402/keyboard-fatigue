@@ -69,9 +69,25 @@ def test_other_typing_moves_the_score_by_the_model(sessions, model):
     assert r["model_inputs"] == pytest.approx(dict(zip(COLS, X.mean(axis=0))), abs=1e-5)
 
 
-def test_someone_without_a_baseline_gets_not_enough_data(sessions, model):
+def test_a_strangers_first_try_is_compared_with_the_tester_average(sessions, model):
+    # the only tester is Zoe, so typing like her usual is the tester average plus the intercept
     r = score_ananya(as_page_sends(sessions[0], "A Judge", 12), model)
-    assert passes_page_checks(r) and r["model"] == "not enough data yet" and "Ananya" in r["note"]
+    assert passes_page_checks(r) and r["model"] == "no-baseline model" and r["baseline"] == "tester average"
+    assert r["usual_kss"] == 3.0 and r["shift"] == pytest.approx(0.25, abs=1e-3) and "Ananya" in r["note"]
+    nobody = score_ananya(dict(as_page_sends(sessions[0], "", 12), metadata={}), model)
+    assert passes_page_checks(nobody) and nobody["model"] == "no-baseline model"
+
+
+def test_a_strangers_later_tries_are_compared_with_their_own(sessions, model):
+    store = MemoryStore()
+    first = score_ananya(as_page_sends(sessions[1], "Visitor", 12), model, store=store)
+    again = score_ananya(as_page_sends(sessions[1], "visitor", 12), model, store=store)
+    assert first["model"] == "no-baseline model" and first["history"] == {"saved": True, "attempts": 1}
+    assert passes_page_checks(again) and again["model"] == "best-attempt model" and again["baseline"] == "own history"
+    assert again["shift"] == pytest.approx(0.25, abs=1e-3) and again["usual_kss"] == 3.0  # same typing as before
+    assert again["history"] == {"saved": True, "attempts": 2} and "1 earlier try" in again["note"]
+    evening = score_ananya(as_page_sends(sessions[1], "Visitor", 22), model, store=store)  # other phase: no own tries yet
+    assert evening["model"] == "no-baseline model" and evening["usual_kss"] == 6.0
 
 
 def test_the_hour_picks_the_phase():
@@ -87,12 +103,13 @@ def test_too_little_typing_is_refused(sessions, model):
         score_ananya(dict(s, keys=s["keys"][:10]), model)
 
 
-def test_scores_are_stored_under_the_scrambled_key(sessions, model):
+def test_scores_are_stored_under_the_scrambled_key_without_adj(sessions, model):
     store = MemoryStore()
     r = score_ananya(as_page_sends(sessions[1], "Zoe", 12), model, store=store)
     rows = store.history(teammate_key("Zoe"))
     assert r["history"]["saved"] and len(rows) == 1 and rows[0]["model"] == "ananya model" and rows[0]["adj"] == {}
-    score_ananya(as_page_sends(sessions[1], "A Judge", 12), model, store=store)  # no score, nothing stored
+    assert set(rows[0]["shown"]["ananya_features"]) == set(COLS) and rows[0]["shown"]["phase"] == "post"
+    score_ananya(as_page_sends(sessions[1], "", 12), model, store=store)  # no username, nothing stored
     assert len(store.rows) == 1
 
 

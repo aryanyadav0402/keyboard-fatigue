@@ -123,6 +123,32 @@ def export_ananya(package: Path, name: str, note: str = "", typing_only: bool = 
     }
 
 
+def tester_average(model: dict) -> dict:
+    """The average tester: everyone's usual features, and their usual KSS for each phase."""
+    people = list((model.get("people") or {}).values())
+    kss = {}
+    for phase in ("pre", "post"):
+        values = [p["usual_kss_by_phase"][phase] for p in people if phase in p["usual_kss_by_phase"]]
+        if values:
+            kss[phase] = float(np.mean(values))
+    features = {c: float(np.mean([p["usual_features"][c] for p in people])) for c in model["feature_order"]}
+    return {"usual_features": features if people else None, "usual_kss_by_phase": kss, "people": len(people)}
+
+
+def own_history(rows: list[dict], phase: str, cols: list[str]) -> tuple[dict | None, int]:
+    """The average features of a user's earlier attempts with her model in this phase, and how many there were."""
+    found = []
+    for r in rows:
+        shown = r.get("shown") if isinstance(r.get("shown"), dict) else {}
+        f = shown.get("ananya_features")
+        if (r.get("model") == LABEL and shown.get("phase") == phase and isinstance(f, dict)
+                and all(isinstance(f.get(c), (int, float)) for c in cols)):
+            found.append(f)
+    if not found:
+        return None, 0
+    return {c: float(np.mean([f[c] for f in found])) for c in cols}, len(found)
+
+
 def describe_ananya(model: dict) -> dict:
     """A short public summary for GET /api/models, shaped like describe_model's."""
     return {"name": model["name"], "kind": KIND, "note": model.get("note", ""), "created_at": model.get("created_at"),
@@ -134,8 +160,10 @@ def describe_ananya(model: dict) -> dict:
 def score_ananya(body: dict, model: dict, store=None) -> dict:
     """Score one posted attempt (the short form or a whole session) with her model.
 
-    Replies use the labels the demo page knows: a teammate's score is a "best-attempt model" reply whose
-    note names her model, and anyone without a baseline gets "not enough data yet"."""
+    Replies use the labels the demo page knows, with a note naming her model. A teammate is compared with
+    their own baseline ("best-attempt model"). Anyone else is compared with the testers' average on their
+    first try ("no-baseline model"), then with their own earlier tries in the same phase from `store`
+    ("best-attempt model"). Either way they start from the testers' usual KSS for the time of day."""
     parsed, username = read_attempt(body)  # the same checks and username rules as our own models
     session = body if body.get("schema") == "typing-station" else compact_to_session(body, "DEMO")
     try:
@@ -159,36 +187,63 @@ def score_ananya(body: dict, model: dict, store=None) -> dict:
     key = teammate_key(username) if username else None
     person = (model.get("people") or {}).get(key) if key else None
     phase = phase_of(local_hour(session))
+    testers = tester_average(model)
     reply = {"scale": SCALE, "fatigue_index": None, "username": username, "rule": rule, "features": features,
              "scaled_features": None, "typical_for_this_rule": {}, "best": None, "best_reference": None,
              "phase": phase, "model_version": model["name"], "saved_as_training_data": False}
 
-    if person is None or phase not in person["usual_kss_by_phase"]:
-        note = (f"Ananya's model has no check-ins from you {PHASE_TEXT[phase]}, so it can't tell what's usual for you now."
-                if person is not None else
-                f"Ananya's model compares your typing with your own usual typing from our night, so it can only "
-                f"score the {len(model.get('people') or {})} people who did check-ins. Try our main model for a first guess.")
-        return dict(reply, score=None, label=None, level=None, model="not enough data yet", note=note,
-                    model_inputs={}, usual_kss=None, shift=None, history=None)
+    # Whose usual typing to compare with, and which usual KSS to start from. The demo page asks no
+    # sleepiness question, so anyone but a teammate starts from the testers' usual KSS for this phase.
+    earlier, history_ok = 0, None
+    if person is not None:
+        basis, usual_features = "teammate", person["usual_features"]
+        usual = person["usual_kss_by_phase"].get(phase, testers["usual_kss_by_phase"].get(phase))
+    else:
+        own = None
+        if store is not None and key:
+            try:
+                own, earlier = own_history(store.history(key), phase, cols)
+                history_ok = True
+            except Exception:  # a database hiccup never stops scoring: use the testers' average
+                history_ok = False
+        basis, usual_features = ("own history", own) if own is not None else ("tester average", testers["usual_features"])
+        usual = testers["usual_kss_by_phase"].get(phase)
+    if usual_features is None or usual is None:
+        return dict(reply, score=None, label=None, level=None, model="not enough data yet",
+                    note=f"Ananya's model has no check-ins {PHASE_TEXT[phase]} to compare with yet.",
+                    model_inputs={}, usual_kss=None, shift=None, baseline=None, history=None)
 
-    X = np.array([[f[c] - person["usual_features"][c] for c in cols] for f in wf])
+    X = np.array([[f[c] - usual_features[c] for c in cols] for f in wf])
     z = (X - np.array(model["scaler_mean"])) / np.array(model["scaler_scale"])
     shift = float((z @ np.array(model["coef"]) + model["intercept"]).mean())
-    usual = float(person["usual_kss_by_phase"][phase])
+    usual = float(usual)
     score = float(np.clip(usual + shift, 1, 9))
     rounded, label, level = kss_wording(score)
     saved = None
-    if store is not None:
-        record = {"user_key": key, "model_version": model["name"], "model": LABEL, "score": score,
-                  "first_guess": None, "rule": rule, "adj": {}, "shown": features}
+    if store is not None and key and history_ok is not False:
+        # her features go in "shown" with no adj, so our own models never use these records as a baseline
+        record = {"user_key": key, "model_version": model["name"], "model": LABEL, "score": score, "first_guess": None,
+                  "rule": rule, "adj": {}, "shown": dict(features, ananya_features=means, phase=phase)}
         try:
             store.add(record)
             saved = True
         except Exception:  # a database hiccup never stops scoring
             saved = False
-    return dict(reply, score=rounded, label=label, level=level, model="best-attempt model",
-                note=(f"Ananya's model: compared with your usual typing from last night's check-ins. You usually rated "
-                      f"{usual:g} {PHASE_TEXT[phase]}, and your typing now moves that by {shift:+.1f}."),
+    moves = f"and your typing now moves that by {shift:+.1f}."
+    if basis == "teammate":
+        anchor = (f"You usually rated {usual:g}" if phase in person["usual_kss_by_phase"]
+                  else f"Our testers usually rated {usual:.1f}")
+        note = f"Ananya's model: compared with your usual typing from last night's check-ins. {anchor} {PHASE_TEXT[phase]}, {moves}"
+    elif basis == "own history":
+        tries = "try" if earlier == 1 else "tries"
+        note = (f"Ananya's model: compared with your own {earlier} earlier {tries} here. Our testers usually rated "
+                f"{usual:.1f} {PHASE_TEXT[phase]}, {moves}")
+    else:
+        note = (f"Ananya's model, first try: we don't know your usual typing yet, so this compares it with our "
+                f"{testers['people']} testers' average. They usually rated {usual:.1f} {PHASE_TEXT[phase]}, {moves}"
+                + (" Your next tries will be compared with your own." if key else ""))
+    return dict(reply, score=rounded, label=label, level=level,
+                model="no-baseline model" if basis == "tester average" else "best-attempt model", note=note,
                 model_inputs={c: round(float(X[:, i].mean()), 6) for i, c in enumerate(cols)},
-                usual_kss=usual, shift=round(shift, 3),
-                history=None if store is None else {"saved": bool(saved), "attempts": None})
+                usual_kss=usual, shift=round(shift, 3), baseline=basis,
+                history=None if store is None else {"saved": bool(saved), "attempts": earlier + 1 if history_ok else None})
