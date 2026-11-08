@@ -1,0 +1,45 @@
+{
+  "description": "Stage-1 SWELL model: person-centred keystroke measures -> person-centred, SD-scaled MentalEffort / Stress (ridge, alpha=1). Trained on all SWELL people; hold-out scores are leave-one-person-out.",
+  "features": {
+    "rate": "log(keys per minute) over the person-condition block, minutes with >=20 keys",
+    "errr": "sqrt(error keys / keys)"
+  },
+  "centring": "subtract the person's own mean over their N, I and T blocks, then divide by the pooled within-person SD below",
+  "feature_order": [
+    "rate",
+    "errr"
+  ],
+  "within_person_sd": {
+    "rate": 0.1980592136970122,
+    "errr": 0.029368015365656922
+  },
+  "n_people": 24,
+  "n_person_condition_rows": 72,
+  "conditions": [
+    "N",
+    "I",
+    "T"
+  ],
+  "ridge_alpha": 1.0,
+  "weights": {
+    "effort": {
+      "rate": 0.05453498590649184,
+      "errr": -0.3168997107511828
+    },
+    "stress": {
+      "rate": -0.09978783562013131,
+      "errr": -0.32602494462135545
+    },
+    "intercept": 0.0
+  },
+  "scores_on_unseen_swell_people_leave_one_person_out": {
+    "effort": {
+      "skill": 0.033256728453220585,
+      "spearman_rho": 0.2272197368380547
+    },
+    "stress": {
+      "skill": 0.00026030235171181637,
+      "spearman_rho": 0.3943979045082327
+    }
+  }
+}
