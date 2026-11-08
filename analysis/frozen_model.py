@@ -181,37 +181,88 @@ def check_best_reference(best) -> dict | None:
     return best
 
 
-def score_attempt(body: dict, model: dict, best_reference: dict | None = None) -> dict:
-    """Score one posted attempt with a frozen model, comparing it with the user's best attempt if sent."""
+def mean_of(values) -> float | None:
+    vals = [float(v) for v in values if v is not None and not (isinstance(v, float) and math.isnan(v))]
+    return float(np.mean(vals)) if vals else None
+
+
+def baseline_from_history(history: list[dict]) -> dict:
+    """A user's baseline from their stored attempts: the average of their first two (or their only one),
+    like the team's first two check-ins. Its score is what the first guess said for those attempts."""
+    # only attempts stored with this file's typing features count (another model's records may have none)
+    first = [r for r in history if any(v is not None for v in (r.get("adj") or {}).values())][:2]
+    return {"adj": {c: mean_of((r.get("adj") or {}).get(c) for r in first) for c in REFERENCE},
+            "shown": {label: mean_of((r.get("shown") or {}).get(label) for r in first) for label in SHOWN.values()},
+            "score": mean_of(r.get("first_guess") if r.get("first_guess") is not None else r.get("score") for r in first)}
+
+
+def ratios(shown: dict, reference: dict) -> dict:
+    return {label: (round(value / reference[label], 3) if value is not None and reference.get(label) else None)
+            for label, value in shown.items()}
+
+
+def score_attempt(body: dict, model: dict, best_reference: dict | None = None, store=None) -> dict:
+    """Score one posted attempt with a frozen model.
+
+    Teammates are compared with their check-ins from last night. Anyone else with a username is compared
+    with their own first attempts, read from `store` (the API's database) when there is one, or else with
+    the best_reference the page sent back. With no history at all it's the no-baseline first guess.
+    Every scored attempt by a named user is added to `store`."""
     parsed, username = read_attempt(body)
     row = attempt_row(parsed, model)
     check_typing(row, parsed)
+    key = teammate_key(username) if username else None
+    history, history_ok = None, None
+    if store is not None and key:
+        try:
+            history, history_ok = store.history(key), True
+        except Exception:  # a database hiccup shouldn't stop the demo: score without history
+            history_ok = False
     best = check_best_reference(best_reference if best_reference is not None else body.get("best_reference"))
     best = best if username else None  # like the local server: comparisons need a username
     if best is not None and best.get("model_version") != model["name"]:
         best = None  # a best from another model isn't comparable, so the user starts again with this one
 
     fg = first_guess_index(model)
-    mate = (model.get("teammates") or {}).get(teammate_key(username)) if username else None
+    X = first_guess = None
+    if fg is not None:
+        X = pd.to_numeric(row.reindex(fg.columns), errors="coerce").to_numpy(float).reshape(1, -1)
+        first_guess = float(np.clip(fg.predict(X)[0], 1, 9))
+    mate = (model.get("teammates") or {}).get(key) if key else None
+    base = baseline_from_history(history) if history else None
+    params = model.get("personal")
     score, model_name, inputs = None, "not enough data yet", {}
-    if mate is not None and model.get("personal"):
+    if mate is not None and params:
         # a teammate: the personal model against their baseline from last night, from the first attempt
-        params = model["personal"]
         x = teammate_inputs(row, params["features"], mate)
         score, model_name = float(np.clip(mate["kss_base"] + personal_predict(params, x), 1, 9)), "personal model"
         inputs = dict(zip(params["features"], x))
-    elif best is not None and model.get("personal"):
-        params = model["personal"]
+    elif base is not None and base["score"] is not None and params:
+        # anyone else with stored attempts: the personal model's change from their own first attempts
+        attempt, repeat = compared_with_best(row, base["adj"], params["features"])
+        change = personal_predict(params, attempt) - personal_predict(params, repeat)
+        score, model_name = float(np.clip(base["score"] + change, 1, 9)), "history model"
+        inputs = dict(zip(params["features"], attempt))
+    elif best is not None and params:
         attempt, repeat = compared_with_best(row, best["adj"], params["features"])
         change = personal_predict(params, attempt) - personal_predict(params, repeat)
         score, model_name = float(np.clip(best["score"] + change, 1, 9)), "best-attempt model"
         inputs = dict(zip(params["features"], attempt))
-    elif fg is not None:
-        X = pd.to_numeric(row.reindex(fg.columns), errors="coerce").to_numpy(float).reshape(1, -1)
-        score, model_name = float(np.clip(fg.predict(X)[0], 1, 9)), "no-baseline model"
+    elif first_guess is not None:
+        score, model_name = first_guess, "no-baseline model"
         inputs = dict(zip(fg.columns, X[0]))
 
     shown = {label: clean(row.get(col)) for col, label in SHOWN.items()}  # every key, null when not measured
+    adj = {c: float(row[c]) if pd.notna(row.get(c)) else None for c in REFERENCE if c in row.index}
+    saved = None
+    if store is not None and key and score is not None and history_ok is not False:
+        record = {"user_key": key, "model_version": model["name"], "model": model_name, "score": score,
+                  "first_guess": first_guess, "rule": str(row.question_type), "adj": adj, "shown": shown}
+        try:
+            store.add(record)
+            saved = True
+        except Exception:
+            saved = False
     best_info = new_reference = None
     if username and score is not None:
         now = datetime.now().isoformat(timespec="seconds")
@@ -219,22 +270,25 @@ def score_attempt(body: dict, model: dict, best_reference: dict | None = None) -
         attempts = int(best.get("attempts", 0)) + 1 if best else 1
         if new_best:
             # unrounded, so repeating the best attempt exactly gives exactly the best score
-            adj = {c: float(row[c]) if pd.notna(row.get(c)) else None for c in REFERENCE if c in row.index}
             new_reference = {"score": score, "rule": row.question_type, "adj": adj, "raw": shown,
                              "attempts": attempts, "best_at": now, "model_version": model["name"]}
         else:
             new_reference = dict(best, attempts=attempts)
         best_info = {"score": round(new_reference["score"], 1), "attempts": attempts, "new_best": new_best,
                      "best_at": new_reference.get("best_at")}
+        if history is not None:  # the stored attempts know better than what the page sent back
+            earlier = [r for r in history if r.get("score") is not None]
+            top = min(earlier, key=lambda r: r["score"]) if earlier else None
+            new_best = top is None or score < top["score"]
+            best_info = {"score": round(score if new_best else top["score"], 1), "attempts": len(history) + 1,
+                         "new_best": new_best, "best_at": now if new_best else top.get("created_at")}
     scaled = None
     if mate is not None:
-        base_raw = mate.get("shown_base") or {}
-        scaled = {label: (round(value / base_raw[label], 3) if value is not None and base_raw.get(label) else None)
-                  for label, value in shown.items()}
+        scaled = ratios(shown, mate.get("shown_base") or {})
+    elif model_name == "history model":
+        scaled = ratios(shown, base["shown"])
     elif best is not None:
-        best_raw = best.get("raw") or {}
-        scaled = {label: (round(value / best_raw[label], 3) if value is not None and best_raw.get(label) else None)
-                  for label, value in shown.items()}
+        scaled = ratios(shown, best.get("raw") or {})
     index_info = None  # the team comparison is only for people with no baseline
     if model_name == "no-baseline model":
         index_info = describe_from_index(fg, model["first_guess"]["panel_index"], X)
@@ -244,9 +298,9 @@ def score_attempt(body: dict, model: dict, best_reference: dict | None = None) -
         "scale": SCALE,
         "label": label,
         "level": level,
-        # pages know three labels; a teammate's personal-model score reads like a best-attempt one,
-        # and the note says it's compared with last night's check-ins
-        "model": "best-attempt model" if model_name == "personal model" else model_name,
+        # pages know three labels; a teammate's or returning user's personal-model score reads like a
+        # best-attempt one, and the note says what it's compared with
+        "model": "best-attempt model" if model_name in ("personal model", "history model") else model_name,
         "note": NOTES[model_name].format(best=best["score"] if best else 0),
         "fatigue_index": index_info,
         "username": username,
@@ -257,6 +311,7 @@ def score_attempt(body: dict, model: dict, best_reference: dict | None = None) -
         "model_inputs": {k: clean(v) for k, v in inputs.items()},
         "best": best_info,
         "best_reference": new_reference,
+        "history": None if store is None else {"saved": bool(saved), "attempts": len(history) + 1 if history is not None else None},
         "model_version": model["name"],
         "saved_as_training_data": False,
     }

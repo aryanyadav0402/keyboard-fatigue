@@ -44,6 +44,41 @@ def walkups(folder):
     return sorted({p.name.split("_")[0] for p in folder.glob("WALKUP-*.json")})
 
 
+def test_stored_history_gives_a_baseline_without_the_page_sending_anything(night, frozen):
+    from attempt_store import MemoryStore
+    store = MemoryStore()
+    first = demo_body(night, walkups(night)[0], username="Visitor One")
+    r1 = score_attempt(first, frozen, store=store)
+    assert r1["model"] == "no-baseline model" and r1["history"] == {"saved": True, "attempts": 1}
+    r2 = score_attempt(first, frozen, store=store)  # typing just like the first try, nothing sent back
+    assert r2["model"] == "best-attempt model" and "first attempts" in r2["note"]
+    assert r2["score"] == pytest.approx(r1["score"], abs=0.051) and r2["history"]["attempts"] == 2
+    r3 = score_attempt(demo_body(night, walkups(night)[1], username="visitor one"), frozen, store=store)
+    assert r3["model"] == "best-attempt model" and r3["history"] == {"saved": True, "attempts": 3}
+    # numbers under one scrambled key: no name, keystrokes or typed text
+    dump = json.dumps(store.rows)
+    assert "VISITOR" not in dump.upper() and '"keys"' not in dump and first["typed"] not in dump
+    assert len({r["user_key"] for r in store.rows}) == 1
+
+
+def test_a_database_outage_still_scores(night, frozen):
+    class Down:
+        def history(self, key):
+            raise ConnectionError("down")
+
+        def add(self, record):
+            raise ConnectionError("down")
+
+    reply = score_attempt(demo_body(night, walkups(night)[0], username="someone"), frozen, store=Down())
+    assert reply["model"] == "no-baseline model" and reply["history"] == {"saved": False, "attempts": None}
+
+
+def test_database_urls_keep_only_settings_libpq_knows():
+    from attempt_store import clean_url
+    url = "postgres://u:p@db.example:6543/postgres?sslmode=require&supa=base-pooler.x&pgbouncer=true"
+    assert clean_url(url) == "postgres://u:p@db.example:6543/postgres?sslmode=require"
+
+
 def test_teammate_gets_the_personal_model_from_the_first_attempt(night, frozen):
     from model import display_models
     f = build_features(load_sessions(night))

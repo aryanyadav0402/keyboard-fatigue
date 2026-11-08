@@ -12,7 +12,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ANALYSIS = HERE.parent / "analysis"
-MODULES = ["tasks.py", "load_data.py", "features.py", "first_guess.py", "attempt.py", "frozen_model.py"]
+MODULES = ["tasks.py", "load_data.py", "features.py", "first_guess.py", "attempt.py", "frozen_model.py", "attempt_store.py"]
 
 
 def main() -> None:

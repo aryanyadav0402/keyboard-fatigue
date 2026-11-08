@@ -21,7 +21,7 @@ def load(name: str):
     return module.handler
 
 
-ROUTES = {"/api/score": load("score"), "/api/models": load("models")}
+ROUTES = {"/api/score": load("score"), "/api/models": load("models"), "/api/history": load("history")}
 
 
 class Router(ROUTES["/api/score"]):

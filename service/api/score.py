@@ -17,8 +17,10 @@ sys.path.insert(0, str(ROOT / "lib"))
 
 from attempt import BadSession  # noqa: E402
 from frozen_model import check_model, score_attempt  # noqa: E402
+from attempt_store import store_from_env  # noqa: E402
 
 MAX_BODY_BYTES = 2_000_000
+STORE = store_from_env()  # the attempt history database, or None when this deployment has none
 
 
 def load_models() -> tuple[str, dict]:
@@ -69,7 +71,7 @@ class handler(BaseHTTPRequestHandler):
         if name not in MODELS:
             return self.send_json(404, {"error": f"no model called {name!r}", "models": sorted(MODELS)})
         try:
-            result = score_attempt(body, MODELS[name])  # nothing is stored
+            result = score_attempt(body, MODELS[name], store=STORE)  # stores numbers only, never keystrokes
         except BadSession as err:
             return self.send_json(422, {"error": str(err)})
         except Exception as err:
