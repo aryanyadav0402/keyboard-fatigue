@@ -202,6 +202,7 @@ cd ../service && vercel deploy --prod
 | `demo.py`, `attempt.py` | Scores one demo attempt for `POST /api/score` |
 | `frozen_model.py`, `export_model.py` | Exports a trained model as plain numbers and scores with it, for the hosted API in `service/` |
 | `fair_test.py` | Tests our model against a single SWELL stress score on check-ins after 00:18 on 8 Nov, fixed before we looked at any of them |
+| `results/experiments/` | The overnight experiments of 8 Nov: a shared test harness, five experiment tracks and the frozen morning test. Start with `FINDINGS.md`. Only the code and write-ups are in git, not results from real check-ins |
 | `run_all.py`, `predict_latest.py`, `simulate.py` | The commands above |
 
 `data/` is kept out of git because it holds people's keystrokes. Results from real check-ins stay out of git too, except the frozen models in `service/models/`, which hold only numbers.

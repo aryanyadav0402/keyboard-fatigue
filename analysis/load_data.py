@@ -166,8 +166,9 @@ def parse_session(d: dict, source_name: str = "session") -> dict:
 def load_sessions(folder: str | Path) -> Tables:
     """Read every session file under folder.
 
-    Test runs and the app's in-progress checkpoints are skipped. When the same session appears more
-    than once (say, a copy in Downloads too), the most complete copy wins.
+    Test runs and the app's in-progress checkpoints are skipped, and so is anyone whose only check-ins
+    were aborted (a quick try of the app, not a participant). When the same session appears more than
+    once (say, a copy in Downloads too), the most complete copy wins.
     """
     best, problems = {}, []
     skipped_tests = skipped_partial = 0
@@ -189,8 +190,12 @@ def load_sessions(folder: str | Path) -> Tables:
         rank = (s["session"]["completed"], len(s["keys"]), len(s["pvt"]))
         if cid not in best or rank > best[cid][0]:
             best[cid] = (rank, s)
+    chosen = [s for _, s in best.values()]
+    finished = {s["session"]["person"] for s in chosen if s["session"]["completed"]}
+    kept = [s for s in chosen if s["session"]["person"] in finished or not s["session"]["aborted"]]
+    skipped_tests += len(chosen) - len(kept)
     sessions, units, keys, pvt = [], [], [], []
-    for _, s in best.values():
+    for s in kept:
         sessions.append(s["session"])
         units += s["units"]
         keys += s["keys"]

@@ -25,6 +25,8 @@ Keep this current while building, and copy it into the submission. The event's C
 | The fatigue index as the demo's headline for people with no baseline: a percentile against the team's check-ins and what drove it (`fatigue_index` in `POST /api/score`, `describe` in `analysis/first_guess.py`) | Claude Code | all of it | not reviewed yet |
 | Hosted scoring API on Vercel: trained models exported as plain numbers, a scorer that needs neither the team's data nor scikit-learn, and the page keeping each user's best (`service/`, `analysis/frozen_model.py`, `analysis/export_model.py`, `analysis/attempt.py`, with changes to `features.py`, `first_guess.py` and `demo.py`) | Claude Code | all of it | not reviewed yet |
 | A fair test of our model against a single SWELL stress score, fixed before we looked at later check-ins (`analysis/fair_test.py`) | Claude Code | all of it | not reviewed yet |
+| Overnight experiments: a shared test harness, five experiment tracks run as Claude Code subagents (sequence and neural models, keystroke-level features, small-data training strategies, first-guess models, simulation), the frozen morning test and the write-up (`analysis/results/experiments/`) | Claude Code | all of it | not reviewed yet |
+| Skipping people whose only check-ins were aborted, such as a quick test of the app (`analysis/load_data.py`) | Claude Code | all of it | not reviewed yet |
 
 ## What we wrote or decided ourselves
 

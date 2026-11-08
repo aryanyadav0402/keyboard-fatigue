@@ -1,0 +1,111 @@
+{
+  "name": "ridge_fg5",
+  "fitted_on": "33 panel check-ins up to 2026-11-08 00:53:51 (P1-P5), baselines included",
+  "features": [
+    "vt_rule_cost_adj",
+    "vt_gap_cv_adj",
+    "vt_pause_rel_share_adj",
+    "backspace_per100_adj",
+    "vt_accuracy_adj"
+  ],
+  "rule_references": {
+    "vt_rule_cost": {
+      "rule": "divide",
+      "typical": {
+        "capitalize_first_and_last": 2.1510972460508846,
+        "capitalize_vowels": 1.1413567864720289,
+        "dashes_and_vowels": 1.3946243814672363,
+        "dashes_for_spaces": 2.1567651633044513,
+        "dots_and_vowels": 1.8674248132019153
+      },
+      "overall": 1.8361114726744743
+    },
+    "vt_gap_cv": {
+      "rule": "subtract, add overall",
+      "typical": {
+        "capitalize_first_and_last": 0.8259702244322963,
+        "capitalize_vowels": 0.8601196038129704,
+        "dashes_and_vowels": 0.9989878542505923,
+        "dashes_for_spaces": 0.5729393468155071,
+        "dots_and_vowels": 0.9704197135984666
+      },
+      "overall": 0.8398919753153679
+    },
+    "vt_pause_rel_share": {
+      "rule": "subtract, add overall",
+      "typical": {
+        "capitalize_first_and_last": 0.14854215918045705,
+        "capitalize_vowels": 0.0,
+        "dashes_and_vowels": 0.1111111111111111,
+        "dashes_for_spaces": 0.12962962962962962,
+        "dots_and_vowels": 0.16666666666666666
+      },
+      "overall": 0.12244897959183673
+    },
+    "backspace_per100": {
+      "rule": "subtract, add overall",
+      "typical": {
+        "capitalize_first_and_last": 6.117103235747303,
+        "capitalize_vowels": 8.620689655172415,
+        "dashes_and_vowels": 6.25,
+        "dashes_for_spaces": 3.4482758620689653,
+        "dots_and_vowels": 5.172413793103448
+      },
+      "overall": 5.172413793103448
+    },
+    "vt_accuracy": {
+      "rule": "divide",
+      "typical": {
+        "capitalize_first_and_last": 1.0,
+        "capitalize_vowels": 1.0,
+        "dashes_and_vowels": 1.0,
+        "dashes_for_spaces": 1.0,
+        "dots_and_vowels": 1.0
+      },
+      "overall": 1.0
+    }
+  },
+  "impute_median": {
+    "vt_rule_cost_adj": 1.0,
+    "vt_gap_cv_adj": 0.839892,
+    "vt_pause_rel_share_adj": 0.122449,
+    "backspace_per100_adj": 5.172414,
+    "vt_accuracy_adj": 1.0
+  },
+  "mean": {
+    "vt_rule_cost_adj": 1.048286,
+    "vt_gap_cv_adj": 0.901181,
+    "vt_pause_rel_share_adj": 0.138566,
+    "backspace_per100_adj": 6.289579,
+    "vt_accuracy_adj": 0.978313
+  },
+  "sd": {
+    "vt_rule_cost_adj": 0.337398,
+    "vt_gap_cv_adj": 0.335088,
+    "vt_pause_rel_share_adj": 0.084839,
+    "backspace_per100_adj": 5.045685,
+    "vt_accuracy_adj": 0.067837
+  },
+  "alpha": 3.1622776601683795,
+  "weight_per_sd": {
+    "vt_rule_cost_adj": 0.2052,
+    "vt_gap_cv_adj": -0.7312,
+    "vt_pause_rel_share_adj": -0.2576,
+    "backspace_per100_adj": -0.3043,
+    "vt_accuracy_adj": 0.8164
+  },
+  "intercept": 6.1212,
+  "clip": [
+    1,
+    9
+  ],
+  "walkup_predictions": [
+    7.11,
+    2.79,
+    7.09
+  ],
+  "panel_prediction_range_in_sample": [
+    2.13,
+    7.93
+  ]
+}

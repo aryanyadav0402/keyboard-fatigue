@@ -179,6 +179,20 @@ def test_in_progress_checkpoints_and_duplicate_copies_are_skipped(few_sessions):
     assert (tables.sessions.status == "final").all()
 
 
+def test_people_whose_only_checkins_were_aborted_are_skipped(few_sessions):
+    final = json.loads(next(few_sessions.glob("*.json")).read_text())
+    tester = dict(final, session_id="test-run", participant_id="TESTER", participant_name="Tester",
+                  completed=False, aborted=True)
+    (few_sessions / "test_run.json").write_text(json.dumps(tester))
+    # an aborted check-in from someone who finished others still counts
+    (few_sessions / "stopped_early.json").write_text(json.dumps(dict(final, session_id="stopped-early",
+                                                                     completed=False, aborted=True)))
+    tables = load_sessions(few_sessions)
+    assert "test-run" not in set(tables.sessions.checkin_id)
+    assert "stopped-early" in set(tables.sessions.checkin_id)
+    assert tables.skipped_test_runs == 1
+
+
 def test_clock_falls_back_to_hours_since_first_checkin():
     f = pd.DataFrame({"person": ["P"] * 3,
                       "timestamp": pd.to_datetime(["2026-11-07 14:00", "2026-11-07 15:30", "2026-11-07 18:00"]),
