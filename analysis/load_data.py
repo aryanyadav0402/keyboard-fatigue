@@ -141,7 +141,9 @@ def parse_session(d: dict, source_name: str = "session") -> dict:
             "practice": "practice" in str(task.get("name", "")),
             "source": source, "expected": expected, "typed": u.get("typed") or "",
             "t_shown": u.get("t_shown"), "t_first_key": u.get("t_first_key"), "t_end": u.get("t_end"),
-            "focus_losses": focus_losses(ui, task.get("t_start", -math.inf), task.get("t_end")),
+            # only looking away while typing spoils the timings, so count from the first key press
+            "focus_losses": focus_losses(ui, u["t_first_key"] if u.get("t_first_key") is not None
+                                         else task.get("t_start", -math.inf), task.get("t_end")),
         })
 
     shown = {(u["task_idx"], u["unit"]): u for u in units}

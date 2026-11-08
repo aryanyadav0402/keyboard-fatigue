@@ -73,6 +73,16 @@ def test_a_database_outage_still_scores(night, frozen):
     assert reply["model"] == "no-baseline model" and reply["history"] == {"saved": False, "attempts": None}
 
 
+def test_looking_away_before_typing_is_fine_but_not_while_typing(night, frozen):
+    session = json.loads(sorted(night.glob("WALKUP-*.json"))[0].read_text())
+    first = session["units"][0]["t_first_key"]
+    before = dict(session, ui=[[first - 5000, "window_blur", None], [first - 4000, "visibility", "hidden"]])
+    assert score_attempt(before, frozen)["score"] is not None
+    during = dict(session, ui=[[first + 1000, "window_blur", None]])
+    with pytest.raises(BadSession, match="lost focus"):
+        score_attempt(during, frozen)
+
+
 def test_database_urls_keep_only_settings_libpq_knows():
     from attempt_store import clean_url
     url = "postgres://u:p@db.example:6543/postgres?sslmode=require&supa=base-pooler.x&pgbouncer=true"

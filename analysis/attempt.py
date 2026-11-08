@@ -125,6 +125,9 @@ def read_attempt(body) -> tuple[dict, str | None]:
 def check_typing(row: pd.Series, parsed: dict) -> None:
     """Refuse attempts with too little typing, or keys that don't cover what was typed."""
     if pd.isna(row.get("vt_wpm")):
+        if pd.notna(row.get("vt_focus_losses")) and row.get("vt_focus_losses") > 0:
+            raise BadSession("the page lost focus while typing (another tab or window), so the timings can't be "
+                             "trusted: try again without switching away")
         raise BadSession("not enough typing to score: send at least 5 key presses from the sentence")
     typed_chars = len(str(parsed["units"][0].get("typed") or "").rstrip("\n"))
     if row.get("vt_n_keys", 0) < 0.6 * typed_chars:
