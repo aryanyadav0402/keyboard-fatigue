@@ -32,6 +32,15 @@ def load_models() -> tuple[str, dict]:
 
 
 DEFAULT, MODELS = load_models()
+TEAM_KSS_FILE = ROOT / "models" / "team_kss.json"
+TEAM_KSS = json.loads(TEAM_KSS_FILE.read_text())["kss"] if TEAM_KSS_FILE.exists() else []
+
+
+def team_percentile(score: float) -> int:
+    """The share of the team's overnight check-ins that were rated less sleepy than this score."""
+    below = sum(k < score for k in TEAM_KSS)
+    ties = sum(k == score for k in TEAM_KSS)
+    return round(100 * (below + ties / 2) / len(TEAM_KSS))
 
 
 class handler(BaseHTTPRequestHandler):
@@ -81,6 +90,12 @@ class handler(BaseHTTPRequestHandler):
             return self.send_json(422, {"error": str(err)})
         except Exception as err:
             return self.send_json(500, {"error": f"{type(err).__name__}: {err}"})
+        if result.get("score") is not None and TEAM_KSS:
+            # the score against how sleepy the team rated itself, for every model: an honest restatement
+            # of the score (the old typing-index percentile pointed the wrong way on our data)
+            p = team_percentile(result["score"])
+            result["fatigue_index"] = {"percentile": p, "drivers": [],
+                                       "text": f"Sleepier than {p}% of our team's check-ins during the all-nighter."}
         self.send_json(200, result)
 
     def log_message(self, *args) -> None:  # never log requests: they hold people's typing
