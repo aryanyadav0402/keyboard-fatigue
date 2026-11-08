@@ -2,6 +2,8 @@
 
 Our HackTheBurgh XIII project: we predict how tired someone is from how they type.
 
+Try it out here: https://tiredtype.vercel.app/
+
 ## How it works
 
 People on our overnight panel do a check-in every hour or so while they're awake. Everyone uses one shared laptop, so the keyboard is always the same. Each check-in in the check-in app (`typing_station.zip`) has:
