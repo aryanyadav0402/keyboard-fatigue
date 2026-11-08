@@ -3,13 +3,14 @@
 :root {
   font-family: 'DM Sans', system-ui, sans-serif;
   color: #b9c7d6;
-  background: #05080d;
+  background: hsl(20, 90%, 93%);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
 
 * { box-sizing: border-box; }
+html, body { background: hsl(20, 90%, 93%); overscroll-behavior-y: none; }
 body { margin: 0; min-width: 320px; min-height: 100vh; }
 button, input, select { font: inherit; }
 button { cursor: pointer; }

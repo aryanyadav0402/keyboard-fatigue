@@ -30,7 +30,9 @@ export type PredictionResponse = {
   saved_as_training_data?: boolean
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://keyboard-fatigue-api.vercel.app/api/score'
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  'https://keyboard-fatigue-api.vercel.app/api/score?model=ananya-2026-11-08'
 
 function isPredictionResponse(value: unknown): value is PredictionResponse {
   if (!value || typeof value !== 'object') return false
