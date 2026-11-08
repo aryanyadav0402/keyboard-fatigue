@@ -201,6 +201,7 @@ cd ../service && vercel deploy --prod
 | `serve.py` | Live predictions as JSON for the dashboard |
 | `demo.py`, `attempt.py` | Scores one demo attempt for `POST /api/score` |
 | `frozen_model.py`, `export_model.py` | Exports a trained model as plain numbers and scores with it, for the hosted API in `service/` |
+| `fair_test.py` | Tests our model against a single SWELL stress score on check-ins after 00:18 on 8 Nov, fixed before we looked at any of them |
 | `run_all.py`, `predict_latest.py`, `simulate.py` | The commands above |
 
 `data/` is kept out of git because it holds people's keystrokes. Results from real check-ins stay out of git too, except the frozen models in `service/models/`, which hold only numbers.
@@ -212,6 +213,7 @@ cd ../service && vercel deploy --prod
 - [pytest](https://pytest.org/), under the MIT licence
 - [uv](https://docs.astral.sh/uv/), under the MIT or Apache 2.0 licence
 - [Vercel](https://vercel.com/), which hosts the scoring API
+- The SWELL knowledge work dataset (Koldijk et al., 2014), which Ananya's SWELL stress recipe was trained on
 - The KSS (Åkerstedt and Gillberg, 1990), and the 3-minute reaction-time test with a 355 ms lapse cut-off (Basner, Mollicone and Dinges, 2011)
 
 ## Credits

@@ -24,6 +24,7 @@ Keep this current while building, and copy it into the submission. The event's C
 | First-guess model for people with no baseline: the fatigue index, pauses relative to the person's own pace, and a comparison that predicts each panel person as a stranger (`analysis/first_guess.py`, `analysis/compare_first_guess.py`, with changes to `features.py` and `model.py`) | Claude Code | all of it | not reviewed yet |
 | The fatigue index as the demo's headline for people with no baseline: a percentile against the team's check-ins and what drove it (`fatigue_index` in `POST /api/score`, `describe` in `analysis/first_guess.py`) | Claude Code | all of it | not reviewed yet |
 | Hosted scoring API on Vercel: trained models exported as plain numbers, a scorer that needs neither the team's data nor scikit-learn, and the page keeping each user's best (`service/`, `analysis/frozen_model.py`, `analysis/export_model.py`, `analysis/attempt.py`, with changes to `features.py`, `first_guess.py` and `demo.py`) | Claude Code | all of it | not reviewed yet |
+| A fair test of our model against a single SWELL stress score, fixed before we looked at later check-ins (`analysis/fair_test.py`) | Claude Code | all of it | not reviewed yet |
 
 ## What we wrote or decided ourselves
 
@@ -34,3 +35,4 @@ Keep this current while building, and copy it into the submission. The event's C
 - pandas, NumPy, SciPy, scikit-learn and statsmodels (BSD 3-Clause licence), Matplotlib (Matplotlib licence) and pytest (MIT licence), for the analysis
 - uv (MIT or Apache 2.0 licence), to manage the Python environment
 - The Karolinska Sleepiness Scale and the 3-minute reaction-time test (PVT-B), published research methods used by the check-in app
+- The SWELL knowledge work dataset (Koldijk et al., 2014), used by Ananya's SWELL stress model
